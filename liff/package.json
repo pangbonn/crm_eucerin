@@ -1,0 +1,26 @@
+{
+  "name": "liff2",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@tailwindcss/forms": "^0.5.11",
+    "autoprefixer": "^10.5.0",
+    "axios": "^1.15.1",
+    "daisyui": "^2.52.0",
+    "pinia": "^3.0.4",
+    "postcss": "^8.5.10",
+    "tailwindcss": "^3.4.19",
+    "vue": "^3.5.12",
+    "vue-router": "^4.6.4"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.1.4",
+    "vite": "^5.4.10"
+  }
+}

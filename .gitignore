@@ -1,0 +1,24 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Claude Code personal settings
+.claude/
+
+# PDF spec document (large binary, not source code)
+*.pdf
+
+# Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Environment / secrets (handled inside app/ and liff/ too, belt-and-suspenders)
+.env
+.env.*
+!.env.example
+
+# OS
+Thumbs.db

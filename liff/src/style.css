@@ -1,0 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* { box-sizing: border-box; }
+body { margin: 0; font-family: 'Noto Sans Thai', sans-serif; }
+#app { max-width: 430px; margin: 0 auto; min-height: 100svh; }
