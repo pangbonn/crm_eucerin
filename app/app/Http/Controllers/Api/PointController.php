@@ -22,8 +22,11 @@ class PointController extends Controller
     public function ranking()
     {
         $users = User::where('is_active', true)
-            ->withSum('points as total_points', 'points')
-            ->orderByDesc('total_points')
+            ->withSum(['points as ranking_points' => function ($q) {
+                $q->where('source', '!=', 'redemption')
+                  ->where('points', '>', 0);
+            }], 'points')
+            ->orderByDesc('ranking_points')
             ->limit(10)
             ->get(['id', 'name', 'lastname', 'level', 'photo_url']);
 
@@ -33,7 +36,7 @@ class PointController extends Controller
                 'name'         => $u->name . ' ' . $u->lastname,
                 'level'        => $u->level,
                 'photo_url'    => $u->photo_url,
-                'total_points' => (int) ($u->total_points ?: 0),
+                'total_points' => (int) ($u->ranking_points ?: 0),
             ];
         }));
     }

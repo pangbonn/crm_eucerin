@@ -1,0 +1,21 @@
+{
+  "id": "backoffice-products-v1",
+  "goal": "เพิ่มโมดูลจัดการสินค้าใน Backoffice",
+  "requirements": [
+    "มีรูปสินค้า",
+    "มีชื่อสินค้า",
+    "มีรายละเอียดสินค้า",
+    "มีสถานะเปิด/ปิด"
+  ],
+  "scope": {
+    "admin": [
+      "migration products table",
+      "Product model",
+      "Admin ProductController CRUD",
+      "views index/form",
+      "web routes",
+      "sidebar menu"
+    ],
+    "api": []
+  }
+}

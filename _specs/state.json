@@ -1,0 +1,11 @@
+{
+  "feature": "backoffice-products-management",
+  "status": "completed",
+  "roles": {
+    "RESEARCHER": "completed",
+    "ARCHITECT": "completed",
+    "CODER": "completed",
+    "QA": "completed"
+  },
+  "updated_at": "2026-04-23"
+}

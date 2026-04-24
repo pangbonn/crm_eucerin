@@ -12,22 +12,6 @@
       <div class="badge badge-warning mt-2">{{ user ? user.level : '' }}</div>
     </div>
 
-    <!-- Stats -->
-    <div class="grid grid-cols-3 gap-px bg-base-300 mx-4 mt-4 rounded-xl overflow-hidden shadow">
-      <div class="bg-base-100 p-4 text-center">
-        <p class="text-2xl font-bold text-primary">{{ user ? user.total_points : 0 }}</p>
-        <p class="text-xs text-gray-500">คะแนนสะสม</p>
-      </div>
-      <div class="bg-base-100 p-4 text-center">
-        <p class="text-2xl font-bold text-success">{{ stampCount }}</p>
-        <p class="text-xs text-gray-500">Stamps</p>
-      </div>
-      <div class="bg-base-100 p-4 text-center">
-        <p class="text-2xl font-bold text-warning">{{ redemptionCount }}</p>
-        <p class="text-xs text-gray-500">แลกแล้ว</p>
-      </div>
-    </div>
-
     <!-- Branch Info -->
     <div v-if="user && user.branch" class="card bg-base-200 shadow mx-4 mt-4">
       <div class="card-body py-3">
@@ -55,19 +39,57 @@
         <p class="text-sm">ยังไม่มีประวัติการแลก</p>
       </div>
       <div v-else>
-        <div v-for="r in redemptions" :key="r.id"
-             class="flex items-center gap-3 py-3 border-b border-base-200 last:border-0">
-          <div class="w-10 h-10 rounded-full bg-base-300 flex items-center justify-center text-xl flex-shrink-0">🎁</div>
-          <div class="flex-1">
-            <p class="text-sm font-medium">{{ r.reward_name }}</p>
-            <p class="text-xs text-gray-400">{{ formatDate(r.created_at) }}</p>
-          </div>
-          <div class="badge badge-sm"
-               :class="{ 'badge-warning': r.status === 'pending', 'badge-success': r.status === 'approved', 'badge-error': r.status === 'rejected' }">
-            {{ statusLabel(r.status) }}
+        <div v-for="section in redemptionsByMonth" :key="section.key" class="mb-4">
+          <h3 class="text-xs font-semibold text-gray-500 uppercase mb-2">{{ section.label }}</h3>
+          <div class="bg-base-100 rounded-xl border border-base-200 overflow-hidden">
+            <div v-for="r in section.items" :key="r.id"
+                 class="flex items-center gap-3 py-3 px-2 border-b border-base-200 last:border-0 cursor-pointer"
+                 @click="openDetail(r)">
+              <div class="w-10 h-10 rounded-full bg-base-300 flex items-center justify-center text-xl flex-shrink-0">🎁</div>
+              <div class="flex-1">
+                <p class="text-sm font-medium">
+                  วันที่ {{ formatDate(r.created_at) }} แลก{{ r.reward_name }} {{ r.quantity }} ชิ้น
+                </p>
+              </div>
+              <div class="badge badge-sm"
+                   :class="{ 'badge-warning': r.status === 'pending', 'badge-success': r.status === 'approved', 'badge-error': r.status === 'rejected' }">
+                {{ statusLabel(r.status) }}
+              </div>
+            </div>
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- Redemption Detail Dialog -->
+    <div v-if="selectedRedemption" class="modal modal-open">
+      <div class="modal-box">
+        <h3 class="font-bold text-lg mb-3">รายละเอียดการแลกของรางวัล</h3>
+        <div class="space-y-2 text-sm">
+          <p><b>วันที่:</b> {{ formatDate(selectedRedemption.created_at) }}</p>
+          <p><b>รายการ:</b> {{ selectedRedemption.reward_name }} {{ selectedRedemption.quantity }} ชิ้น</p>
+          <p><b>สถานะ:</b> {{ statusLabel(selectedRedemption.status) }}</p>
+          <div class="pt-2 border-t border-base-200">
+            <p class="font-semibold mb-1">ที่อยู่จัดส่ง</p>
+            <p>{{ selectedRedemption.shipping_name }} | {{ selectedRedemption.shipping_phone }}</p>
+            <p>
+              {{ selectedRedemption.shipping_address }}
+              {{ selectedRedemption.shipping_subdistrict }}
+              {{ selectedRedemption.shipping_district }}
+              {{ selectedRedemption.shipping_province }}
+              {{ selectedRedemption.shipping_postal_code }}
+            </p>
+          </div>
+          <div class="pt-2 border-t border-base-200">
+            <p><b>ขนส่ง:</b> {{ selectedRedemption.shipping_carrier || '-' }}</p>
+            <p><b>เลข Tracking:</b> {{ selectedRedemption.tracking_number || '-' }}</p>
+          </div>
+        </div>
+        <div class="modal-action">
+          <button class="btn btn-primary" @click="selectedRedemption = null">ปิด</button>
+        </div>
+      </div>
+      <div class="modal-backdrop" @click="selectedRedemption = null"></div>
     </div>
 
     <!-- Logout -->
@@ -89,15 +111,35 @@ const auth            = useAuthStore();
 const router          = useRouter();
 const redemptions     = ref([]);
 const historyLoading  = ref(true);
+const selectedRedemption = ref(null);
 
 const user = computed(() => auth.user);
+const redemptionsByMonth = computed(() => {
+    var grouped = {};
+    redemptions.value.forEach(function (r) {
+        var d = new Date(r.created_at);
+        var key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+        if (!grouped[key]) grouped[key] = [];
+        grouped[key].push(r);
+    });
 
-const stampCount = computed(() => {
-    // ดึงจาก exam results ถ้ามี — ใช้ placeholder ก่อน
-    return 0;
+    return Object.keys(grouped)
+        .sort(function (a, b) { return a < b ? 1 : -1; })
+        .map(function (key) {
+            var parts = key.split('-');
+            var year = Number(parts[0]);
+            var month = Number(parts[1]);
+            var label = new Date(year, month - 1, 1).toLocaleDateString('th-TH', {
+                month: 'long',
+                year: 'numeric',
+            });
+            return {
+                key: key,
+                label: label,
+                items: grouped[key],
+            };
+        });
 });
-
-const redemptionCount = computed(() => redemptions.value.filter(r => r.status === 'approved').length);
 
 onMounted(async () => {
     try {
@@ -111,8 +153,12 @@ onMounted(async () => {
 });
 
 function handleLogout() {
-    auth.logout();
+    auth.logoutAndLoginWithLine();
     router.replace('/register');
+}
+
+function openDetail(redemption) {
+    selectedRedemption.value = redemption;
 }
 
 function statusLabel(status) {

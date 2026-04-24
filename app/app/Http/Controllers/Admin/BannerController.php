@@ -60,7 +60,7 @@ class BannerController extends Controller
     private function validateBanner(Request $request): array
     {
         return $request->validate([
-            'type'            => 'required|in:main,receipt,exam,reward',
+            'type'            => 'required|in:main,receipt,receipt_cta,exam,exam_cta,reward',
             'condition_text'  => 'nullable|string|max:500',
             'link_url'        => 'nullable|url|max:500',
             'is_active'       => 'boolean',

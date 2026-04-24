@@ -12,7 +12,7 @@
             <div class="form-group">
                 <label>ประเภท <span class="text-danger">*</span></label>
                 <select name="type" class="form-control" required>
-                    @foreach(['main'=>'หน้าหลัก','receipt'=>'ส่งใบเสร็จ','exam'=>'แบบทดสอบ','reward'=>'แลกรางวัล'] as $v=>$l)
+                    @foreach(['main'=>'หน้าหลัก','receipt'=>'ส่งใบเสร็จ','receipt_cta'=>'ส่งใบเสร็จ (ปุ่ม CTA)','exam'=>'แบบทดสอบ (Header)','exam_cta'=>'แบบทดสอบ (ปุ่ม CTA)','reward'=>'แลกรางวัล'] as $v=>$l)
                         <option value="{{ $v }}" {{ old('type', $banner->type)===$v?'selected':'' }}>{{ $l }}</option>
                     @endforeach
                 </select>
@@ -20,18 +20,28 @@
 
             <div class="form-group">
                 <label>รูปภาพ Banner</label>
-                @if($banner->exists && $banner->image_url)
-                    <div class="mb-2">
-                        <img src="{{ filter_var($banner->image_url, FILTER_VALIDATE_URL) ? $banner->image_url : Storage::url($banner->image_url) }}"
-                             style="height:80px;object-fit:cover;" class="img-thumbnail">
-                    </div>
-                @endif
-                <input type="file" name="image_url" class="form-control-file" accept=".jpg,.jpeg,.png">
+                <div class="mb-2">
+                    @if($banner->exists && $banner->image_url)
+                        <img id="existing-image" src="{{ filter_var($banner->image_url, FILTER_VALIDATE_URL) ? $banner->image_url : Storage::url($banner->image_url) }}"
+                             style="height:100px;object-fit:cover;" class="img-thumbnail">
+                    @endif
+                    <img id="preview-image" src="#" alt="Preview" class="img-thumbnail" style="height:100px;object-fit:cover;display:none;">
+                </div>
+                <input type="file" id="file-image" name="image_url" class="form-control-file" accept=".jpg,.jpeg,.png">
             </div>
 
             <div class="form-group">
-                <label>ข้อความเงื่อนไข</label>
-                <textarea name="condition_text" class="form-control" rows="2">{{ old('condition_text', $banner->condition_text) }}</textarea>
+                <label>ข้อความปุ่ม (Button Text)</label>
+                <input type="text" name="condition_text" class="form-control" placeholder="เช่น เริ่มทำแบบทดสอบ"
+                       value="{{ old('condition_text', $banner->condition_text) }}">
+                <small class="form-text text-muted">ข้อความที่แสดงบนปุ่ม CTA ของ Banner</small>
+            </div>
+
+            <div class="form-group">
+                <label>Link URL (ปุ่ม CTA)</label>
+                <input type="url" name="link_url" class="form-control" placeholder="https://..."
+                       value="{{ old('link_url', $banner->link_url) }}">
+                <small class="form-text text-muted">URL ที่ปุ่มจะพาไป (ถ้าไม่กำหนด ปุ่มจะไม่แสดง)</small>
             </div>
 
             <div class="row">
@@ -74,4 +84,16 @@
         </form>
     </div>
 </div>
+@stop
+@section('js')
+<script>
+document.getElementById('file-image').addEventListener('change', function () {
+    if (!this.files[0]) return;
+    var prev = document.getElementById('preview-image');
+    prev.src = URL.createObjectURL(this.files[0]);
+    prev.style.display = 'inline-block';
+    var existing = document.getElementById('existing-image');
+    if (existing) existing.style.display = 'none';
+});
+</script>
 @stop

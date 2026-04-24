@@ -33,7 +33,7 @@
             <select name="zone" class="form-control form-control-sm mr-2">
                 <option value="">-- เขต --</option>
                 @foreach($zones as $z)
-                    <option value="{{ $z }}" {{ request('zone')==$z?'selected':'' }}>{{ $z }}</option>
+                    <option value="{{ $z->id }}" {{ request('zone')==$z->id?'selected':'' }}>{{ $z->name }}</option>
                 @endforeach
             </select>
             <button class="btn btn-sm btn-primary mr-2">ค้นหา</button>
@@ -76,7 +76,7 @@
                     </td>
                     <td>
                         @if($user->currentBranch && $user->currentBranch->branch)
-                            <small>{{ $user->currentBranch->branch->zone }} / {{ $user->currentBranch->branch->shop_name }}</small>
+                            <small>{{ $user->currentBranch->branch->zone->name ?? '' }} / {{ $user->currentBranch->branch->shop_name }}</small>
                         @else
                             <small class="text-muted">-</small>
                         @endif

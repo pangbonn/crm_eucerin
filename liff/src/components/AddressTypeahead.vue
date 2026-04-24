@@ -15,6 +15,7 @@
         autocomplete="off"
         @input="onInput"
         @focus="onFocus"
+        @blur="onBlur"
         @keydown.down.prevent="moveDown"
         @keydown.up.prevent="moveUp"
         @keydown.enter.prevent="selectHighlighted"
@@ -72,13 +73,14 @@ const open        = ref(false);
 const highlighted = ref(-1);
 const wrapper     = ref(null);
 const inputEl     = ref(null);
+const isFocused   = ref(false);
 
 // filter options จาก query ภายใน component
 const displayOptions = computed(() => {
-    const q = query.value.trim();
+    const q = query.value.trim().toLowerCase();
     let list = props.options;
     if (q.length > 0) {
-        list = list.filter(opt => opt.name.includes(q));
+        list = list.filter(opt => opt.name.toLowerCase().includes(q));
     }
     return list.slice(0, 20);
 });
@@ -87,15 +89,15 @@ watch(() => props.options, (newOpts) => {
     if (props.modelValue) {
         const opt = newOpts.find(o => o.id === props.modelValue);
         if (opt) query.value = opt.name;
-    } else {
+    } else if (!isFocused.value) {
         query.value       = '';
         highlighted.value = -1;
     }
 });
 
-// เมื่อ parent reset modelValue เป็น null → ล้าง query
+// เมื่อ parent reset modelValue เป็น null → ล้าง query (ยกเว้นตอน user กำลังพิมพ์)
 watch(() => props.modelValue, (val) => {
-    if (!val) query.value = '';
+    if (!val && !isFocused.value) query.value = '';
 });
 
 // เมื่อ disabled หาย → reset
@@ -112,7 +114,13 @@ function onInput() {
 }
 
 function onFocus() {
+    isFocused.value = true;
     if (!props.disabled) open.value = true;
+}
+
+function onBlur() {
+    isFocused.value = false;
+    if (!props.modelValue) query.value = '';
 }
 
 function moveDown() {

@@ -25,9 +25,9 @@ class AuthController extends Controller
             'picture_url'       => 'nullable|string',
         ]);
 
-        // ตรวจสอบ access token กับ LINE
-        $lineUser = $this->verifyLineToken($request->line_access_token);
-        if (!$lineUser || $lineUser['sub'] !== $request->line_uid) {
+        // ตรวจสอบ access token กับ LINE — ใช้ /v2/profile เพื่อได้ userId
+        $lineProfile = $this->verifyLineToken($request->line_access_token);
+        if (!$lineProfile || ($lineProfile['userId'] ?? null) !== $request->line_uid) {
             return response()->json(['message' => 'LINE token ไม่ถูกต้อง'], 401);
         }
 
@@ -73,6 +73,7 @@ class AuthController extends Controller
             'subdistrict_name'  => 'required|string|max:100',
             'zipcode'           => 'nullable|string|max:10',
             'branch_id'         => 'required|exists:branches,id',
+            'start_year'        => 'nullable|integer|min:1990|max:' . now()->year,
         ]);
 
         $user = User::create([
@@ -82,7 +83,7 @@ class AuthController extends Controller
             'phone'         => $request->phone,
             'employee_code' => $request->employee_code ?: 'BA' . time(),
             'birthdate'     => $request->birthday ?: now()->subYears(25)->toDateString(),
-            'start_year'    => now()->year,
+            'start_year'    => $request->start_year ?: now()->year,
             'consent_pdpa'  => true,
             'photo_url'     => $request->line_picture_url,
             'level'         => 'gold',
@@ -121,7 +122,9 @@ class AuthController extends Controller
 
     private function userPayload(User $user): array
     {
+        $user->loadMissing(['currentBranch.branch.zone', 'address']);
         $branch = $user->currentBranch ? $user->currentBranch->branch : null;
+        $address = $user->address;
         return [
             'id'            => $user->id,
             'first_name'    => $user->name,
@@ -130,18 +133,27 @@ class AuthController extends Controller
             'employee_code' => $user->employee_code,
             'level'         => $user->level,
             'photo_url'     => $user->photo_url,
-            'total_points'  => $user->total_points,
+            'total_points'   => $user->total_points,
+            'receipt_points' => $user->receipt_points,
             'is_active'     => $user->is_active,
-            'branch'        => $branch ? ['id' => $branch->id, 'name' => $branch->shop_name, 'zone' => $branch->zone] : null,
+            'branch'        => $branch ? ['id' => $branch->id, 'name' => $branch->shop_name, 'zone' => $branch->zone ? $branch->zone->name : ''] : null,
+            'address'       => $address ? [
+                'name'            => trim(($user->name ?: '') . ' ' . ($user->lastname ?: '')),
+                'phone'           => $user->phone,
+                'address_line'    => $address->address,
+                'province_name'   => $address->province_name,
+                'district_name'   => $address->district_name,
+                'subdistrict_name'=> $address->subdistrict_name,
+                'zipcode'         => $address->postal_code,
+            ] : null,
         ];
     }
 
     private function verifyLineToken(string $accessToken): ?array
     {
         try {
-            $response = Http::get('https://api.line.me/oauth2/v2.1/verify', [
-                'access_token' => $accessToken,
-            ]);
+            $response = Http::withToken($accessToken)
+                            ->get('https://api.line.me/v2/profile');
             if ($response->successful()) {
                 return $response->json();
             }

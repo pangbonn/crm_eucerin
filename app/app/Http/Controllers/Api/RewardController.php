@@ -35,6 +35,16 @@ class RewardController extends Controller
     {
         $request->validate([
             'reward_id' => 'required|exists:rewards,id',
+            'use_registered_address' => 'required|boolean',
+            'shipping_name' => 'required|string|max:150',
+            'shipping_phone' => 'required|string|max:20',
+            'shipping_address' => 'required|string|max:500',
+            'shipping_province' => 'required|string|max:100',
+            'shipping_district' => 'required|string|max:100',
+            'shipping_subdistrict' => 'required|string|max:100',
+            'shipping_postal_code' => 'required|string|max:10',
+            'shipping_carrier' => 'nullable|string|max:100',
+            'tracking_number' => 'nullable|string|max:100',
         ]);
 
         $user = $request->user();
@@ -59,13 +69,34 @@ class RewardController extends Controller
             }
         }
 
-        // ดึงที่อยู่ user
+        // ดึงที่อยู่ user สำหรับกรณีใช้ที่อยู่ลงทะเบียน
         $address = $user->address;
-        if (!$address) {
+        $useRegisteredAddress = (bool) $request->boolean('use_registered_address');
+        if ($useRegisteredAddress && !$address) {
             return response()->json(['message' => 'ไม่พบข้อมูลที่อยู่ กรุณาติดต่อ Admin'], 422);
         }
 
-        DB::transaction(function () use ($user, $reward, $address) {
+        $shippingData = $useRegisteredAddress
+            ? [
+                'shipping_name' => trim(($user->name ?: '') . ' ' . ($user->lastname ?: '')),
+                'shipping_phone' => $user->phone ?: '',
+                'shipping_address' => $address ? $address->address : '',
+                'shipping_province' => $address ? $address->province_name : '',
+                'shipping_district' => $address ? $address->district_name : '',
+                'shipping_subdistrict' => $address ? $address->subdistrict_name : '',
+                'shipping_postal_code' => $address ? $address->postal_code : '',
+            ]
+            : [
+                'shipping_name' => $request->shipping_name,
+                'shipping_phone' => $request->shipping_phone,
+                'shipping_address' => $request->shipping_address,
+                'shipping_province' => $request->shipping_province,
+                'shipping_district' => $request->shipping_district,
+                'shipping_subdistrict' => $request->shipping_subdistrict,
+                'shipping_postal_code' => $request->shipping_postal_code,
+            ];
+
+        DB::transaction(function () use ($user, $reward, $request, $useRegisteredAddress, $shippingData) {
             // ตัดคะแนน
             Point::create([
                 'user_id'  => $user->id,
@@ -82,13 +113,16 @@ class RewardController extends Controller
                 'user_id'               => $user->id,
                 'reward_id'             => $reward->id,
                 'status'                => 'pending',
-                'shipping_name'         => $user->name . ' ' . $user->lastname,
-                'shipping_phone'        => $user->phone,
-                'shipping_address'      => $address->address,
-                'shipping_province'     => $address->province ? $address->province->name_th : '',
-                'shipping_district'     => $address->district ? $address->district->name_th : '',
-                'shipping_subdistrict'  => $address->subdistrict ? $address->subdistrict->name_th : '',
-                'shipping_postal_code'  => $address->postal_code,
+                'use_registered_address'=> $useRegisteredAddress,
+                'shipping_name'         => $shippingData['shipping_name'],
+                'shipping_phone'        => $shippingData['shipping_phone'],
+                'shipping_address'      => $shippingData['shipping_address'],
+                'shipping_province'     => $shippingData['shipping_province'],
+                'shipping_district'     => $shippingData['shipping_district'],
+                'shipping_subdistrict'  => $shippingData['shipping_subdistrict'],
+                'shipping_postal_code'  => $shippingData['shipping_postal_code'],
+                'shipping_carrier'      => $request->shipping_carrier,
+                'tracking_number'       => $request->tracking_number,
             ]);
         });
 
@@ -104,11 +138,20 @@ class RewardController extends Controller
             ->get()
             ->map(function ($r) {
                 return [
-                    'id'          => $r->id,
+                    'id' => $r->id,
                     'reward_name' => $r->reward ? $r->reward->name : '-',
-                    'status'      => $r->status,
-                    'points_used' => 0, // คำนวณจาก points table ถ้าต้องการ
-                    'created_at'  => $r->created_at,
+                    'quantity' => 1,
+                    'status' => $r->status,
+                    'created_at' => $r->created_at,
+                    'shipping_name' => $r->shipping_name,
+                    'shipping_phone' => $r->shipping_phone,
+                    'shipping_address' => $r->shipping_address,
+                    'shipping_subdistrict' => $r->shipping_subdistrict,
+                    'shipping_district' => $r->shipping_district,
+                    'shipping_province' => $r->shipping_province,
+                    'shipping_postal_code' => $r->shipping_postal_code,
+                    'shipping_carrier' => $r->shipping_carrier,
+                    'tracking_number' => $r->tracking_number,
                 ];
             });
 

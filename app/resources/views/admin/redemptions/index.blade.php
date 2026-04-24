@@ -42,7 +42,9 @@
                     </td>
                     <td>
                         <small>{{ $r->shipping_name }} | {{ $r->shipping_phone }}</small>
-                        <br><small class="text-muted">{{ $r->shipping_province }} {{ $r->shipping_postal_code }}</small>
+                        <br><small class="text-muted">{{ $r->shipping_address }}</small>
+                        <br><small class="text-muted">{{ $r->shipping_subdistrict }} {{ $r->shipping_district }} {{ $r->shipping_province }} {{ $r->shipping_postal_code }}</small>
+                        <br><small class="text-muted">ขนส่ง: {{ $r->shipping_carrier ?: '-' }} | Tracking: {{ $r->tracking_number ?: '-' }}</small>
                     </td>
                     <td><small>{{ $r->created_at->format('d/m/Y') }}</small></td>
                     <td>
@@ -82,6 +84,42 @@
                         @else
                             @php $badge = ['approved'=>'success','rejected'=>'danger'] @endphp
                             <span class="badge badge-{{ $badge[$r->status] ?? 'secondary' }}">{{ $r->status }}</span>
+                            @if($r->status === 'approved')
+                                <br>
+                                <button class="btn btn-xs btn-info mt-1" data-toggle="modal"
+                                        data-target="#trackingModal{{ $r->id }}">ใส่/แก้ Tracking</button>
+
+                                <div class="modal fade" id="trackingModal{{ $r->id }}" tabindex="-1">
+                                    <div class="modal-dialog">
+                                        <form action="{{ route('admin.redemptions.tracking.update', $r) }}" method="POST">
+                                            @csrf
+                                            @method('PUT')
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title">อัปเดตข้อมูลขนส่ง</h5>
+                                                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <div class="form-group">
+                                                        <label>ขนส่ง <span class="text-danger">*</span></label>
+                                                        <input type="text" name="shipping_carrier" class="form-control"
+                                                               value="{{ old('shipping_carrier', $r->shipping_carrier) }}" required>
+                                                    </div>
+                                                    <div class="form-group mb-0">
+                                                        <label>เลข Tracking <span class="text-danger">*</span></label>
+                                                        <input type="text" name="tracking_number" class="form-control"
+                                                               value="{{ old('tracking_number', $r->tracking_number) }}" required>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">ยกเลิก</button>
+                                                    <button type="submit" class="btn btn-primary">บันทึก</button>
+                                                </div>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            @endif
                             @if($r->note)<br><small class="text-muted">{{ $r->note }}</small>@endif
                         @endif
                     </td>

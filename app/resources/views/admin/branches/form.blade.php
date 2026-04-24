@@ -16,13 +16,13 @@
 
             <div class="form-group">
                 <label>เขต <span class="text-danger">*</span></label>
-                <select name="zone" class="form-control @error('zone') is-invalid @enderror" required>
+                <select name="zone_id" class="form-control @error('zone_id') is-invalid @enderror" required>
                     <option value="">-- เลือกเขต --</option>
                     @foreach($zones as $z)
-                        <option value="{{ $z }}" {{ old('zone', $branch->zone)===$z?'selected':'' }}>{{ $z }}</option>
+                        <option value="{{ $z->id }}" {{ old('zone_id', $branch->zone_id)==$z->id?'selected':'' }}>{{ $z->name }}</option>
                     @endforeach
                 </select>
-                @error('zone')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                @error('zone_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
 
             <div class="form-group">
@@ -39,13 +39,13 @@
 
             <div class="form-group">
                 <label>ประเภทร้าน (Channel) <span class="text-danger">*</span></label>
-                <select name="shop_type" class="form-control @error('shop_type') is-invalid @enderror" required>
+                <select name="shop_type_id" class="form-control @error('shop_type_id') is-invalid @enderror" required>
                     <option value="">-- เลือกประเภทร้าน --</option>
                     @foreach($shopTypes as $t)
-                        <option value="{{ $t }}" {{ old('shop_type', $branch->shop_type)===$t?'selected':'' }}>{{ $t }}</option>
+                        <option value="{{ $t->id }}" {{ old('shop_type_id', $branch->shop_type_id)==$t->id?'selected':'' }}>{{ $t->name }}</option>
                     @endforeach
                 </select>
-                @error('shop_type')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                @error('shop_type_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
 
             <div class="form-group">

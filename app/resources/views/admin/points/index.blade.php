@@ -29,7 +29,7 @@
                     <td>{{ $user->name }} {{ $user->lastname }}</td>
                     <td>{{ $user->employee_code }}</td>
                     <td>{{ ucfirst($user->level) }}</td>
-                    <td><b class="text-primary">{{ number_format($user->points_sum_points ?? 0) }}</b></td>
+                    <td><b class="text-primary">{{ number_format($user->accumulated_points ?? 0) }}</b></td>
                     <td><a href="{{ route('admin.points.show', $user) }}" class="btn btn-xs btn-default">ประวัติ / ปรับ</a></td>
                 </tr>
                 @empty

@@ -1,7 +1,11 @@
 import axios from 'axios';
 
+const apiBaseURL = import.meta.env.PROD
+    ? (import.meta.env.VITE_API_URL || '')
+    : '';
+
 const api = axios.create({
-    baseURL: '',  // proxy จาก vite.config.js ส่งต่อ /api → Laravel
+    baseURL: apiBaseURL,  // prod ใช้ VITE_API_URL, dev ใช้ vite proxy
     headers: {
         Accept: 'application/json',
         'Content-Type': 'application/json',

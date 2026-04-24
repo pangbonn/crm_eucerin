@@ -86,9 +86,10 @@ class ExamController extends Controller
             'part_number'      => 'required|integer|min:1',
             'vdo_url'          => 'nullable|url|max:500',
             'vdo_file'         => 'nullable|file|mimes:mp4,webm,mov|max:10240',
-            'pre_test_points'  => 'required|integer|min:0',
-            'post_test_points' => 'required|integer|min:0',
-            'is_active'        => 'boolean',
+            'pre_test_points'       => 'required|integer|min:0',
+            'post_test_points'      => 'required|integer|min:0',
+            'questions_per_session' => 'required|integer|min:1',
+            'is_active'             => 'boolean',
             'banner_image'     => 'nullable|file|mimes:jpg,jpeg,png|max:2048',
         ]);
     }

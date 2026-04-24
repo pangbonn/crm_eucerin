@@ -32,7 +32,7 @@ class RedemptionsExport implements FromQuery, WithHeadings, WithMapping
     public function headings(): array
     {
         return ['วันที่อนุมัติ', 'ชื่อ', 'นามสกุล', 'รหัสพนักงาน', 'เบอร์โทร',
-                'ของรางวัล', 'ที่อยู่จัดส่ง', 'จังหวัด', 'รหัสไปรษณีย์'];
+                'ของรางวัล', 'ที่อยู่จัดส่ง', 'จังหวัด', 'รหัสไปรษณีย์', 'ขนส่ง', 'เลข Tracking'];
     }
 
     public function map($r): array
@@ -47,6 +47,8 @@ class RedemptionsExport implements FromQuery, WithHeadings, WithMapping
             $r->shipping_address,
             $r->shipping_province,
             $r->shipping_postal_code,
+            $r->shipping_carrier,
+            $r->tracking_number,
         ];
     }
 }

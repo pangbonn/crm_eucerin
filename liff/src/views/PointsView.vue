@@ -79,7 +79,7 @@ const page = ref(1);
 const hasMore = ref(false);
 
 const totalPoints = computed(() => {
-    return authStore.user ? (authStore.user.total_points || 0) : 0;
+    return authStore.user ? (authStore.user.receipt_points || 0) : 0;
 });
 
 onMounted(() => fetchPoints());

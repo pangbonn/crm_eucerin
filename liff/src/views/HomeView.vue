@@ -28,27 +28,45 @@
       </div>
     </div>
 
+    <!-- Stamp Card -->
+    <div class="card bg-base-200 shadow mx-4 mt-4">
+      <div class="card-body py-4">
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="font-bold text-sm">การ์ดสะสม Stamp</h2>
+          <span class="text-xs text-gray-500">{{ stampCount }}/{{ stampConfig.stamp_max }} Stamp</span>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <div v-for="i in stampConfig.stamp_max" :key="i"
+               class="w-10 h-10 rounded-full border-2 flex items-center justify-center text-lg font-bold"
+               :class="i <= stampCount ? 'border-primary bg-primary text-primary-content' : 'border-base-300 bg-base-100 text-base-300'">
+            {{ i <= stampCount ? '⭐' : i }}
+          </div>
+        </div>
+        <p class="text-xs text-gray-400 mt-2">ทุก {{ stampConfig.stamp_points }} คะแนน = 1 Stamp</p>
+      </div>
+    </div>
+
     <!-- Quick Actions -->
     <div class="grid grid-cols-2 gap-3 mx-4 mt-4">
-      <router-link to="/liff/receipt"
+      <router-link to="/receipt"
         class="card bg-base-200 shadow hover:shadow-md transition-shadow cursor-pointer">
         <div class="card-body items-center text-center py-5">
           <div class="text-3xl mb-1">🧾</div>
-          <p class="font-semibold text-sm">ส่งใบเสร็จ</p>
-          <p class="text-xs text-gray-500">เก็บคะแนน</p>
+          <p class="font-semibold text-sm">สะสมคะแนน</p>
+          <p class="text-xs text-gray-500">ส่งใบเสร็จ</p>
         </div>
       </router-link>
 
-      <router-link to="/liff/exam"
+      <router-link to="/products"
         class="card bg-base-200 shadow hover:shadow-md transition-shadow cursor-pointer">
         <div class="card-body items-center text-center py-5">
-          <div class="text-3xl mb-1">📚</div>
-          <p class="font-semibold text-sm">Exam & Training</p>
-          <p class="text-xs text-gray-500">ทดสอบความรู้</p>
+          <div class="text-3xl mb-1">🧴</div>
+          <p class="font-semibold text-sm">ข้อมูลสินค้า</p>
+          <p class="text-xs text-gray-500">ข้อมูลสินค้า</p>
         </div>
       </router-link>
 
-      <router-link to="/liff/rewards"
+      <router-link to="/rewards"
         class="card bg-base-200 shadow hover:shadow-md transition-shadow cursor-pointer">
         <div class="card-body items-center text-center py-5">
           <div class="text-3xl mb-1">🎁</div>
@@ -57,12 +75,12 @@
         </div>
       </router-link>
 
-      <router-link to="/liff/qa"
+      <router-link to="/profile"
         class="card bg-base-200 shadow hover:shadow-md transition-shadow cursor-pointer">
         <div class="card-body items-center text-center py-5">
-          <div class="text-3xl mb-1">❓</div>
-          <p class="font-semibold text-sm">Q&amp;A</p>
-          <p class="text-xs text-gray-500">คำถามที่พบบ่อย</p>
+          <div class="text-3xl mb-1">👤</div>
+          <p class="font-semibold text-sm">โปรไฟล์</p>
+          <p class="text-xs text-gray-500">ข้อมูลของฉัน</p>
         </div>
       </router-link>
     </div>
@@ -76,20 +94,30 @@ import { useAuthStore } from '@/stores/auth';
 import BottomNav from '@/components/BottomNav.vue';
 import api from '@/composables/useApi';
 
-const authStore = useAuthStore();
-const banner = ref(null);
+const authStore  = useAuthStore();
+const banner     = ref(null);
+const stampConfig = ref({ stamp_max: 8, stamp_points: 10 });
 
 const totalPoints = computed(() => {
     if (!authStore.user) return 0;
-    return authStore.user.total_points || 0;
+    return authStore.user.receipt_points || 0;
+});
+
+const stampCount = computed(() => {
+    const earned = Math.floor(totalPoints.value / stampConfig.value.stamp_points);
+    return Math.min(earned, stampConfig.value.stamp_max);
 });
 
 onMounted(async () => {
     try {
-        const { data } = await api.get('/api/liff/banner/main');
-        banner.value = data;
+        const [bannerRes, configRes] = await Promise.all([
+            api.get('/api/liff/banner/main'),
+            api.get('/api/liff/stamp-config'),
+        ]);
+        banner.value      = bannerRes.data;
+        stampConfig.value = configRes.data;
     } catch (e) {
-        // no banner
+        // ignore
     }
 });
 </script>

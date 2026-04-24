@@ -22,13 +22,13 @@
             <select name="zone" class="form-control form-control-sm mr-2">
                 <option value="">-- เขต --</option>
                 @foreach($zones as $z)
-                    <option value="{{ $z }}" {{ request('zone')==$z?'selected':'' }}>{{ $z }}</option>
+                    <option value="{{ $z->id }}" {{ request('zone')==$z->id?'selected':'' }}>{{ $z->name }}</option>
                 @endforeach
             </select>
             <select name="shop_type" class="form-control form-control-sm mr-2">
                 <option value="">-- ประเภทร้าน --</option>
                 @foreach($shopTypes as $t)
-                    <option value="{{ $t }}" {{ request('shop_type')==$t?'selected':'' }}>{{ $t }}</option>
+                    <option value="{{ $t->id }}" {{ request('shop_type')==$t->id?'selected':'' }}>{{ $t->name }}</option>
                 @endforeach
             </select>
             <button class="btn btn-sm btn-primary mr-2">ค้นหา</button>
@@ -49,9 +49,9 @@
             <tbody>
                 @forelse($branches as $branch)
                 <tr>
-                    <td><span class="badge badge-secondary">{{ $branch->zone }}</span></td>
+                    <td><span class="badge badge-secondary">{{ $branch->zone->name ?? '-' }}</span></td>
                     <td>{{ $branch->province ? $branch->province->name_th : '-' }}</td>
-                    <td>{{ $branch->shop_type }}</td>
+                    <td>{{ $branch->shopType->name ?? '-' }}</td>
                     <td>{{ $branch->shop_name }}</td>
                     <td>
                         @if($branch->is_active)

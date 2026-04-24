@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
+use App\Models\Zone;
+use App\Models\ShopType;
 use App\Models\Province;
 use Illuminate\Http\Request;
 
@@ -11,17 +13,18 @@ class BranchController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Branch::with('province');
+        $query = Branch::with(['zone', 'shopType', 'province'])
+            ->join('zones',      'branches.zone_id',      '=', 'zones.id')
+            ->join('shop_types', 'branches.shop_type_id', '=', 'shop_types.id')
+            ->select('branches.*');
 
-        if ($request->filled('zone'))      $query->where('zone', $request->zone);
-        if ($request->filled('shop_type')) $query->where('shop_type', $request->shop_type);
-        if ($request->filled('search')) {
-            $query->where('shop_name', 'like', '%' . $request->search . '%');
-        }
+        if ($request->filled('zone'))      $query->where('branches.zone_id',      $request->zone);
+        if ($request->filled('shop_type')) $query->where('branches.shop_type_id', $request->shop_type);
+        if ($request->filled('search'))    $query->where('branches.shop_name', 'like', '%' . $request->search . '%');
 
-        $branches  = $query->orderBy('zone')->orderBy('shop_name')->paginate(20)->withQueryString();
-        $zones     = Branch::zones();
-        $shopTypes = Branch::shopTypes();
+        $branches  = $query->orderBy('zones.name')->orderBy('branches.shop_name')->paginate(20)->withQueryString();
+        $zones     = Zone::orderBy('name')->get();
+        $shopTypes = ShopType::orderBy('name')->get();
 
         return view('admin.branches.index', compact('branches', 'zones', 'shopTypes'));
     }
@@ -30,8 +33,8 @@ class BranchController extends Controller
     {
         return view('admin.branches.form', [
             'branch'    => new Branch,
-            'zones'     => Branch::zones(),
-            'shopTypes' => Branch::shopTypes(),
+            'zones'     => Zone::orderBy('name')->get(),
+            'shopTypes' => ShopType::orderBy('name')->get(),
             'provinces' => Province::orderBy('name_th')->get(),
         ]);
     }
@@ -39,10 +42,10 @@ class BranchController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'zone'       => 'required|in:' . implode(',', Branch::zones()),
-            'province_id'=> 'nullable|exists:provinces,id',
-            'shop_type'  => 'required|string|max:100',
-            'shop_name'  => 'required|string|max:200',
+            'zone_id'     => 'required|exists:zones,id',
+            'shop_type_id'=> 'required|exists:shop_types,id',
+            'province_id' => 'nullable|exists:provinces,id',
+            'shop_name'   => 'required|string|max:200',
         ]);
 
         Branch::create($data);
@@ -54,8 +57,8 @@ class BranchController extends Controller
     {
         return view('admin.branches.form', [
             'branch'    => $branch,
-            'zones'     => Branch::zones(),
-            'shopTypes' => Branch::shopTypes(),
+            'zones'     => Zone::orderBy('name')->get(),
+            'shopTypes' => ShopType::orderBy('name')->get(),
             'provinces' => Province::orderBy('name_th')->get(),
         ]);
     }
@@ -63,11 +66,11 @@ class BranchController extends Controller
     public function update(Request $request, Branch $branch)
     {
         $data = $request->validate([
-            'zone'       => 'required|in:' . implode(',', Branch::zones()),
-            'province_id'=> 'nullable|exists:provinces,id',
-            'shop_type'  => 'required|string|max:100',
-            'shop_name'  => 'required|string|max:200',
-            'is_active'  => 'boolean',
+            'zone_id'     => 'required|exists:zones,id',
+            'shop_type_id'=> 'required|exists:shop_types,id',
+            'province_id' => 'nullable|exists:provinces,id',
+            'shop_name'   => 'required|string|max:200',
+            'is_active'   => 'boolean',
         ]);
 
         $branch->update($data);

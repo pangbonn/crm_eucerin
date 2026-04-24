@@ -37,7 +37,7 @@
                     <li class="list-group-item"><b>ปีที่เข้างาน</b> <span class="float-right">{{ $user->start_year }}</span></li>
                     <li class="list-group-item"><b>คะแนนรวม</b> <span class="float-right text-primary"><b>{{ number_format($totalPoints) }}</b></span></li>
                     @if($user->currentBranch && $user->currentBranch->branch)
-                    <li class="list-group-item"><b>เขต</b> <span class="float-right">{{ $user->currentBranch->branch->zone }}</span></li>
+                    <li class="list-group-item"><b>เขต</b> <span class="float-right">{{ $user->currentBranch->branch->zone->name ?? '' }}</span></li>
                     <li class="list-group-item"><b>สาขา</b> <span class="float-right">{{ $user->currentBranch->branch->shop_name }}</span></li>
                     @endif
                 </ul>

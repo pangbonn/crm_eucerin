@@ -9,8 +9,15 @@
         <div class="info-box bg-primary">
             <span class="info-box-icon"><i class="fas fa-star"></i></span>
             <div class="info-box-content">
-                <span class="info-box-text">คะแนนรวม</span>
+                <span class="info-box-text">คะแนนสะสม</span>
                 <span class="info-box-number">{{ number_format($totalPoints) }}</span>
+            </div>
+        </div>
+        <div class="info-box bg-info">
+            <span class="info-box-icon"><i class="fas fa-wallet"></i></span>
+            <div class="info-box-content">
+                <span class="info-box-text">คะแนนคงเหลือ</span>
+                <span class="info-box-number">{{ number_format($remainingPoints) }}</span>
             </div>
         </div>
 
@@ -42,16 +49,28 @@
                         <tr><th>วันที่</th><th>แหล่งที่มา</th><th>คะแนน</th><th>หมายเหตุ</th></tr>
                     </thead>
                     <tbody>
-                        @foreach($points as $p)
+                        @php
+                            $sourceBadge = [
+                                'receipt'    => ['success', 'ใบเสร็จ'],
+                                'redemption' => ['danger',  'แลกรางวัล'],
+                                'manual'     => ['warning', 'Manual'],
+                            ];
+                        @endphp
+                        @forelse($points as $p)
                         <tr>
                             <td><small>{{ $p->created_at->format('d/m/Y H:i') }}</small></td>
-                            <td><span class="badge badge-info">{{ $p->source }}</span></td>
-                            <td class="{{ $p->points >= 0 ? 'text-success' : 'text-danger' }}">
+                            <td>
+                                @php [$color, $label] = $sourceBadge[$p->source] ?? ['secondary', $p->source]; @endphp
+                                <span class="badge badge-{{ $color }}">{{ $label }}</span>
+                            </td>
+                            <td class="{{ $p->points >= 0 ? 'text-success' : 'text-danger' }} font-weight-bold">
                                 {{ $p->points >= 0 ? '+' : '' }}{{ number_format($p->points) }}
                             </td>
                             <td><small>{{ $p->note }}</small></td>
                         </tr>
-                        @endforeach
+                        @empty
+                        <tr><td colspan="4" class="text-center text-muted py-3">ไม่มีประวัติ</td></tr>
+                        @endforelse
                     </tbody>
                 </table>
             </div>

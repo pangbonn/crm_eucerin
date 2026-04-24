@@ -64,7 +64,7 @@ return [
     */
 
     'logo' => '<b>CRM</b>Eucerin',
-    'logo_img' => 'vendor/ผdminlte/dist/img/AdminLTELogo.png',
+    'logo_img' => 'vendor/adminlte/dist/img/AdminLTELogo.png',
     'logo_img_class' => 'brand-image img-circle elevation-3',
     'logo_img_xl' => null,
     'logo_img_xl_class' => 'brand-image-xs',
@@ -342,6 +342,11 @@ return [
             'icon'    => 'fas fa-fw fa-gift',
         ],
         [
+            'text'    => 'จัดการสินค้า',
+            'url'     => 'admin/products',
+            'icon'    => 'fas fa-fw fa-box-open',
+        ],
+        [
             'text'    => 'การแลกรางวัล',
             'url'     => 'admin/redemptions',
             'icon'    => 'fas fa-fw fa-exchange-alt',
@@ -361,6 +366,11 @@ return [
             'text'    => 'รายงาน / Export',
             'url'     => 'admin/reports',
             'icon'    => 'fas fa-fw fa-chart-bar',
+        ],
+        [
+            'text'    => 'ตั้งค่าระบบ',
+            'url'     => 'admin/settings',
+            'icon'    => 'fas fa-fw fa-sliders-h',
         ],
         ['header' => ''],
         [

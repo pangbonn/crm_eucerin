@@ -8,7 +8,7 @@ class ExamPart extends Model
 {
     protected $fillable = [
         'title', 'part_number', 'banner_image', 'vdo_url', 'vdo_path',
-        'pre_test_points', 'post_test_points', 'is_active',
+        'pre_test_points', 'post_test_points', 'questions_per_session', 'is_active',
     ];
 
     protected $casts = ['is_active' => 'boolean'];

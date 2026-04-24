@@ -10,12 +10,9 @@ class CreateBranchesTable extends Migration
     {
         Schema::create('branches', function (Blueprint $table) {
             $table->id();
-            $table->enum('zone', [
-                'BKK1','BKK2','BKK3','BKK4','BKK6','BKK7','BKK8','BKK9',
-                'NU','NL','NEU','NEM','NEL','MID','EAST','SOUTH','DS','OTHER'
-            ]);
+            $table->foreignId('zone_id')->constrained('zones')->restrictOnDelete();
+            $table->foreignId('shop_type_id')->constrained('shop_types')->restrictOnDelete();
             $table->foreignId('province_id')->nullable()->constrained()->nullOnDelete();
-            $table->string('shop_type'); // Channel
             $table->string('shop_name');
             $table->boolean('is_active')->default(true);
             $table->softDeletes();

@@ -83,4 +83,20 @@ class RedemptionController extends Controller
     {
         return Excel::download(new RedemptionsExport, 'redemptions_' . now()->format('Ymd') . '.xlsx');
     }
+
+    public function updateTracking(Request $request, RewardRedemption $redemption)
+    {
+        if ($redemption->status !== 'approved') {
+            return back()->with('error', 'แก้ไข Tracking ได้เฉพาะรายการที่อนุมัติแล้ว');
+        }
+
+        $data = $request->validate([
+            'shipping_carrier' => 'required|string|max:100',
+            'tracking_number' => 'required|string|max:100',
+        ]);
+
+        $redemption->update($data);
+
+        return back()->with('success', 'บันทึกข้อมูลขนส่งและ Tracking เรียบร้อย');
+    }
 }

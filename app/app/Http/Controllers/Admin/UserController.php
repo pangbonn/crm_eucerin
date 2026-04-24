@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Branch;
+use App\Models\Zone;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
@@ -36,23 +37,27 @@ class UserController extends Controller
         }
 
         if ($request->filled('zone')) {
-            $query->whereHas('currentBranch.branch', fn($q) => $q->where('zone', $request->zone));
+            $query->whereHas('currentBranch.branch', function ($q) use ($request) {
+                $q->where('zone_id', $request->zone);
+            });
         }
 
         $users = $query->latest()->paginate(20)->withQueryString();
 
         return view('admin.users.index', [
             'users' => $users,
-            'zones' => Branch::zones(),
+            'zones' => Zone::orderBy('name')->get(),
         ]);
     }
 
     public function show(User $user)
     {
-        $user->load(['address.province', 'address.district', 'address.subdistrict',
+        $user->load(['address',
+                     'currentBranch.branch.zone',
+                     'currentBranch.branch.shopType',
                      'currentBranch.branch.province',
-                     'points' => fn($q) => $q->latest()->limit(20),
-                     'redemptions.reward' => fn($q) => $q->latest(),
+                     'points' => function ($q) { $q->latest()->limit(20); },
+                     'redemptions.reward',
                     ]);
 
         $totalPoints = $user->points()->sum('points');
@@ -63,7 +68,12 @@ class UserController extends Controller
     public function edit(User $user)
     {
         $user->load(['address', 'currentBranch']);
-        $branches = Branch::where('is_active', true)->orderBy('zone')->orderBy('shop_name')->get();
+        $branches = Branch::where('is_active', true)
+            ->join('zones', 'zones.id', '=', 'branches.zone_id')
+            ->orderBy('zones.name')
+            ->orderBy('branches.shop_name')
+            ->select('branches.*')
+            ->get();
 
         return view('admin.users.edit', compact('user', 'branches'));
     }

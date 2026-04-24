@@ -17,7 +17,7 @@
 <div class="card">
     <div class="card-header p-0">
         <ul class="nav nav-tabs" id="receiptTabs">
-            @foreach(['pending'=>'รอตรวจสอบ','approved'=>'อนุมัติแล้ว','rejected'=>'ปฏิเสธแล้ว'] as $key=>$label)
+            @foreach(['pending'=>'รอตรวจสอบ','approved'=>'อนุมัติแล้ว','rejected'=>'ปฏิเสธแล้ว','cancelled'=>'ยกเลิกแล้ว'] as $key=>$label)
             <li class="nav-item">
                 <a class="nav-link {{ $tab===$key?'active':'' }}"
                    href="{{ route('admin.receipts.index', ['tab'=>$key]) }}">
@@ -29,6 +29,11 @@
             </li>
             @endforeach
         </ul>
+        <div class="p-2 text-right">
+            <a href="{{ route('admin.receipts.export.products') }}" class="btn btn-sm btn-success">
+                <i class="fas fa-file-excel"></i> Export รายการสินค้า (ตามใบเสร็จ)
+            </a>
+        </div>
     </div>
 
     <div class="card-body p-0">
@@ -43,7 +48,7 @@
                     @php
                         $branch = ($receipt->user && $receipt->user->currentBranch) ? $receipt->user->currentBranch->branch : null;
                     @endphp
-                    <td><small class="text-muted">{{ $branch ? $branch->zone . ' / ' . $branch->shop_name : '-' }}</small></td>
+                    <td><small class="text-muted">{{ $branch ? ($branch->zone->name ?? '-') . ' / ' . $branch->shop_name : '-' }}</small></td>
                     <td>{{ count($receipt->images ?? []) }} รูป</td>
                     <td><small>{{ $receipt->created_at->format('d/m/Y H:i') }}</small></td>
                     <td>

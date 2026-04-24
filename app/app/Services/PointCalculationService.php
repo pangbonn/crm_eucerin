@@ -3,20 +3,32 @@
 namespace App\Services;
 
 use App\Models\Receipt;
+use App\Models\RewardRedemption;
 use App\Models\Point;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 
 class PointCalculationService
 {
-    public function approveReceipt(Receipt $receipt, float $salesAmount, array $skuData, User $approver): int
+    public function approveReceipt(Receipt $receipt, float $salesAmount, array $skuData, $approver): int
     {
         $user = $receipt->user;
 
-        // base points จาก sales amount (ทุก 1 บาท = 1 point หรือปรับได้ตาม SKU)
-        $basePoints = $this->calculateBasePoints($salesAmount, $skuData);
+        // ถ้าอนุมัติซ้ำ (แก้ไขคะแนน) ให้ reverse คะแนนเดิมก่อน
+        if ($receipt->status === 'approved' && $receipt->points_awarded > 0) {
+            Point::create([
+                'user_id'        => $user->id,
+                'points'         => -$receipt->points_awarded,
+                'source'         => 'receipt',
+                'reference_id'   => $receipt->id,
+                'reference_type' => Receipt::class,
+                'note'           => "ยกเลิกคะแนนเดิม ใบเสร็จ #{$receipt->id} (แก้ไขโดย {$approver->name})",
+            ]);
+        }
 
-        // คูณ multiplier ตามระดับพนักงาน
-        $finalPoints = (int) round($basePoints * $user->level_multiplier);
+        $basePoints  = $this->calculateBasePoints($salesAmount, $skuData);
+        $multiplier  = $user->level_multiplier;
+        $finalPoints = (int) round($basePoints * $multiplier);
 
         $receipt->update([
             'status'         => 'approved',
@@ -27,19 +39,24 @@ class PointCalculationService
             'points_awarded' => $finalPoints,
         ]);
 
+        $levelLabel = ucfirst($user->level);
+        $note = $multiplier != 1.0
+            ? "ใบเสร็จ #{$receipt->id} ยอด " . number_format($salesAmount, 2) . " บาท (base " . number_format($basePoints) . " × {$multiplier} {$levelLabel})"
+            : "ใบเสร็จ #{$receipt->id} ยอด " . number_format($salesAmount, 2) . " บาท";
+
         Point::create([
             'user_id'        => $user->id,
             'points'         => $finalPoints,
             'source'         => 'receipt',
             'reference_id'   => $receipt->id,
             'reference_type' => Receipt::class,
-            'note'           => "ใบเสร็จ #{$receipt->id} ยอด " . number_format($salesAmount, 2) . " บาท",
+            'note'           => $note,
         ]);
 
         return $finalPoints;
     }
 
-    public function rejectReceipt(Receipt $receipt, string $note, User $approver): void
+    public function rejectReceipt(Receipt $receipt, string $note, $approver): void
     {
         $receipt->update([
             'status'      => 'rejected',
@@ -49,13 +66,55 @@ class PointCalculationService
         ]);
     }
 
-    public function adjustPoints(User $user, int $points, string $note, User $admin): void
+    public function adjustPoints(User $user, int $points, string $note, $admin): void
     {
         Point::create([
             'user_id' => $user->id,
             'points'  => $points,
             'source'  => 'manual',
             'note'    => "[Admin: {$admin->name}] {$note}",
+        ]);
+    }
+
+    public function cancelReceiptPoints(Receipt $receipt, $admin): void
+    {
+        DB::transaction(function () use ($receipt, $admin) {
+            // Lock row เพื่อกัน double-submit
+            $fresh = Receipt::lockForUpdate()->find($receipt->id);
+            if (!$fresh || $fresh->status !== 'approved' || $fresh->points_awarded <= 0) {
+                return;
+            }
+
+            Point::create([
+                'user_id'        => $fresh->user_id,
+                'points'         => -$fresh->points_awarded,
+                'source'         => 'receipt',
+                'reference_id'   => $fresh->id,
+                'reference_type' => Receipt::class,
+                'note'           => "ยกเลิกการอนุมัติใบเสร็จ #{$fresh->id} (โดย {$admin->name})",
+            ]);
+
+            $fresh->update([
+                'status'         => 'cancelled',
+                'approved_by'    => $admin->id,
+                'approved_at'    => now(),
+                'points_awarded' => 0,
+            ]);
+        });
+    }
+
+    public function deductRedemptionPoints(User $user, RewardRedemption $redemption): void
+    {
+        $points = $redemption->reward ? $redemption->reward->points_required : 0;
+        if ($points <= 0) return;
+
+        Point::create([
+            'user_id'        => $user->id,
+            'points'         => -$points,
+            'source'         => 'redemption',
+            'reference_id'   => $redemption->id,
+            'reference_type' => RewardRedemption::class,
+            'note'           => "แลกรางวัล: {$redemption->reward->name} #{$redemption->id}",
         ]);
     }
 

@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class QAItem extends Model
 {
+    protected $table = 'qa_items';
     protected $fillable = ['category_id', 'question', 'answer', 'order'];
 
     public function category() { return $this->belongsTo(QACategory::class); }

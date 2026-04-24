@@ -38,9 +38,13 @@
             <label class="label"><span class="label-text">รหัสพนักงาน</span></label>
             <input v-model="form.employee_code" type="text" class="input input-bordered" placeholder="รหัสพนักงาน (ถ้ามี)">
           </div>
+          <DatePicker v-model="form.birthday" label="วันเกิด" :max-year="currentYear - 15" />
           <div class="form-control mb-3">
-            <label class="label"><span class="label-text">วันเกิด</span></label>
-            <input v-model="form.birthday" type="date" class="input input-bordered">
+            <label class="label"><span class="label-text">ปีที่เข้าทำงาน <span class="text-error">*</span></span></label>
+            <select v-model="form.start_year" class="select select-bordered">
+              <option value="">เลือกปี</option>
+              <option v-for="y in startYears" :key="y" :value="y">{{ y }}</option>
+            </select>
           </div>
           <p v-if="errors.step1" class="text-error text-sm mt-1">{{ errors.step1 }}</p>
           <div class="card-actions justify-end mt-2">
@@ -50,7 +54,7 @@
       </div>
     </div>
 
-    <!-- Step 2: Address (Typeahead) -->
+    <!-- Step 2: Address -->
     <div v-if="step === 2" class="px-4">
       <div class="card bg-base-200 shadow">
         <div class="card-body">
@@ -61,7 +65,6 @@
             <input v-model="form.address_line" type="text" class="input input-bordered" placeholder="บ้านเลขที่ ถนน หมู่บ้าน">
           </div>
 
-          <!-- จังหวัด typeahead -->
           <div class="mb-3">
             <AddressTypeahead
               v-model="form.province_id"
@@ -74,7 +77,6 @@
             />
           </div>
 
-          <!-- อำเภอ typeahead -->
           <div class="mb-3">
             <AddressTypeahead
               v-model="form.district_id"
@@ -89,7 +91,6 @@
             <p v-if="!form.province_id" class="text-xs text-gray-400 mt-1">เลือกจังหวัดก่อน</p>
           </div>
 
-          <!-- ตำบล typeahead -->
           <div class="mb-3">
             <AddressTypeahead
               v-model="form.subdistrict_id"
@@ -104,7 +105,6 @@
             <p v-if="!form.district_id" class="text-xs text-gray-400 mt-1">เลือกอำเภอก่อน</p>
           </div>
 
-          <!-- รหัสไปรษณีย์ — auto fill -->
           <div class="form-control mb-3">
             <label class="label"><span class="label-text">รหัสไปรษณีย์</span></label>
             <div v-if="form.zipcode" class="flex items-center gap-2">
@@ -127,29 +127,55 @@
     <div v-if="step === 3" class="px-4">
       <div class="card bg-base-200 shadow">
         <div class="card-body">
-          <h2 class="card-title text-base mb-3">สาขาที่ปฏิบัติงาน</h2>
-          <div class="form-control mb-3">
-            <label class="label"><span class="label-text">ค้นหาสาขา</span></label>
-            <input v-model="branchSearch" type="text" class="input input-bordered" placeholder="ชื่อสาขา...">
+          <h2 class="card-title text-base mb-3">ข้อมูลสาขาที่ทำงานปัจจุบัน</h2>
+
+          <!-- เขต -->
+          <div class="mb-3">
+            <AddressTypeahead
+              v-model="selectedZoneId"
+              :options="zoneOptions"
+              label="เขต"
+              placeholder="พิมพ์ชื่อเขต..."
+              @select="onZoneChange"
+            />
           </div>
-          <div class="overflow-y-auto max-h-64">
-            <div v-for="branch in filteredBranches" :key="branch.id"
-                 class="flex items-center gap-3 p-3 border rounded-lg mb-2 cursor-pointer transition-colors"
-                 :class="form.branch_id === branch.id ? 'border-primary bg-primary/10' : 'border-base-300'"
-                 @click="form.branch_id = branch.id">
-              <div class="flex-1">
-                <p class="font-medium text-sm">{{ branch.name }}</p>
-                <p class="text-xs text-gray-500">{{ branch.zone }}</p>
-              </div>
-              <div v-if="form.branch_id === branch.id" class="text-primary">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                </svg>
-              </div>
-            </div>
+
+          <!-- จังหวัด -->
+          <div class="mb-3">
+            <AddressTypeahead
+              v-model="selectedProvinceId"
+              :options="provinceOptions"
+              label="จังหวัด"
+              placeholder="พิมพ์ชื่อจังหวัด..."
+              @select="onProvinceChange"
+            />
           </div>
+
+          <!-- ประเภทร้าน -->
+          <div class="mb-3">
+            <AddressTypeahead
+              v-model="selectedShopTypeId"
+              :options="shopTypeOptions"
+              label="ประเภทร้าน"
+              placeholder="พิมพ์ประเภทร้าน..."
+              @select="onShopTypeChange"
+            />
+          </div>
+
+          <!-- ชื่อร้าน/สาขา -->
+          <div class="mb-3">
+            <AddressTypeahead
+              v-model="form.branch_id"
+              :options="branchOptions"
+              label="ชื่อร้าน/สาขา"
+              placeholder="พิมพ์ชื่อสาขา..."
+              :required="true"
+              @select="onBranchSelect"
+            />
+          </div>
+
           <p v-if="errors.step3" class="text-error text-sm mt-1">{{ errors.step3 }}</p>
-          <div class="flex gap-2 mt-2">
+          <div class="flex gap-2 mt-3">
             <button class="btn btn-ghost flex-1" @click="step = 2">← ย้อนกลับ</button>
             <button class="btn btn-primary flex-1" @click="submitRegister" :disabled="loading">
               <span v-if="loading" class="loading loading-spinner loading-xs"></span>
@@ -172,27 +198,20 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
-import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
-import { useThaiAddress } from '@/composables/useThaiAddress';
 import AddressTypeahead from '@/components/AddressTypeahead.vue';
+import DatePicker from '@/components/DatePicker.vue';
 import api from '@/composables/useApi';
 
-const router    = useRouter();
 const authStore = useAuthStore();
-const thai      = useThaiAddress();
 
 const step    = ref(1);
 const loading = ref(false);
 const errors  = ref({});
 
-const branchSearch  = ref('');
-const branches      = ref([]);
-
-// Address state
-const provinceOptions  = ref([]);
-const amphureOptions   = ref([]);
-const tambonOptions    = ref([]);
+// ---- Step 1 ----
+const currentYear = new Date().getFullYear();
+const startYears  = Array.from({ length: currentYear - 1999 }, (_, i) => currentYear - i);
 
 const form = ref({
     first_name: '',
@@ -200,6 +219,7 @@ const form = ref({
     phone: '',
     employee_code: '',
     birthday: '',
+    start_year: '',
     address_line: '',
     province_id: null,
     province_name: '',
@@ -211,31 +231,11 @@ const form = ref({
     branch_id: null,
 });
 
-const filteredBranches = computed(() => {
-    if (!branchSearch.value) return branches.value;
-    return branches.value.filter(b =>
-        b.name.toLowerCase().includes(branchSearch.value.toLowerCase())
-    );
-});
+// ---- Step 2: Address (โหลดจาก API เพื่อไม่ bundle JSON ใหญ่) ----
+const provinceOptions = ref([]);
+const amphureOptions  = ref([]);
+const tambonOptions   = ref([]);
 
-onMounted(async () => {
-    provinceOptions.value = thai.getProvinces();
-
-    // โหลด branches จาก API
-    try {
-        const { data } = await api.get('/api/liff/branches');
-        branches.value = data;
-    } catch (e) { /* ignore */ }
-
-    // Pre-fill ชื่อจาก LINE profile
-    if (authStore.lineProfile) {
-        const parts = (authStore.lineProfile.displayName || '').split(' ');
-        form.value.first_name = parts[0] || '';
-        form.value.last_name  = parts.slice(1).join(' ') || '';
-    }
-});
-
-// ---- Province ----
 watch(() => form.value.province_id, (id) => {
     if (!id) {
         amphureOptions.value      = [];
@@ -246,19 +246,19 @@ watch(() => form.value.province_id, (id) => {
     }
 });
 
-function onProvinceSelect(opt) {
+async function onProvinceSelect(opt) {
     if (!opt) { amphureOptions.value = []; return; }
     form.value.province_name    = opt.name;
-    amphureOptions.value        = thai.getAmphuresByProvince(opt.id);
     form.value.district_id      = null;
     form.value.district_name    = '';
     form.value.subdistrict_id   = null;
     form.value.subdistrict_name = '';
     form.value.zipcode          = '';
     tambonOptions.value         = [];
+    const { data } = await api.get(`/api/liff/districts/${opt.id}`);
+    amphureOptions.value = data.map(d => ({ id: d.id, name: d.name_th }));
 }
 
-// ---- Amphure ----
 watch(() => form.value.district_id, (id) => {
     if (!id) {
         tambonOptions.value       = [];
@@ -267,21 +267,68 @@ watch(() => form.value.district_id, (id) => {
     }
 });
 
-function onAmphureSelect(opt) {
+async function onAmphureSelect(opt) {
     if (!opt) { tambonOptions.value = []; return; }
     form.value.district_name    = opt.name;
-    tambonOptions.value         = thai.getTambonsByAmphure(opt.id);
     form.value.subdistrict_id   = null;
     form.value.subdistrict_name = '';
     form.value.zipcode          = '';
+    const { data } = await api.get(`/api/liff/subdistricts/${opt.id}`);
+    tambonOptions.value = data.map(t => ({ id: t.id, name: t.name_th, zip: t.postal_code }));
 }
 
-// ---- Tambon ----
 function onTambonSelect(opt) {
     if (!opt) { form.value.zipcode = ''; return; }
     form.value.subdistrict_name = opt.name;
     form.value.zipcode          = opt.zip ? String(opt.zip) : '';
 }
+
+// ---- Step 3: Branch filters ----
+const allBranches      = ref([]);
+const zoneOptions      = ref([]);
+const shopTypeOptions  = ref([]);
+const selectedZoneId     = ref(null);
+const selectedProvinceId = ref(null);
+const selectedShopTypeId = ref(null);
+
+// กรองตาม zone + province + shop_type แล้วส่งให้ AddressTypeahead จัดการ search เอง
+const branchOptions = computed(() => {
+    let list = allBranches.value;
+    if (selectedZoneId.value)     list = list.filter(b => b.zone_id      == selectedZoneId.value);
+    if (selectedProvinceId.value) list = list.filter(b => b.province_id  == selectedProvinceId.value);
+    if (selectedShopTypeId.value) list = list.filter(b => b.shop_type_id == selectedShopTypeId.value);
+    return list.map(b => ({ id: b.id, name: b.name }));
+});
+
+function onZoneChange()     { form.value.branch_id = null; }
+function onProvinceChange() { form.value.branch_id = null; }
+function onShopTypeChange() { form.value.branch_id = null; }
+function onBranchSelect()   {}
+
+// ---- Init ----
+onMounted(async () => {
+    const [provRes, branchRes, zoneRes, shopTypeRes] = await Promise.allSettled([
+        api.get('/api/liff/provinces'),
+        api.get('/api/liff/branches'),
+        api.get('/api/liff/zones'),
+        api.get('/api/liff/shop-types'),
+    ]);
+
+    if (provRes.status === 'fulfilled')
+        provinceOptions.value = provRes.value.data.map(p => ({ id: p.id, name: p.name_th }));
+    if (branchRes.status === 'fulfilled')
+        allBranches.value = branchRes.value.data;
+    if (zoneRes.status === 'fulfilled')
+        zoneOptions.value = zoneRes.value.data.map(z => ({ id: z.id, name: z.name }));
+    if (shopTypeRes.status === 'fulfilled')
+        shopTypeOptions.value = shopTypeRes.value.data.map(s => ({ id: s.id, name: s.name }));
+
+    if (authStore.lineProfile) {
+        const parts = (authStore.lineProfile.displayName || '').split(' ');
+        form.value.first_name = parts[0] || '';
+        form.value.last_name  = parts.slice(1).join(' ') || '';
+    }
+});
 
 // ---- Validation ----
 function nextStep(current) {
@@ -292,6 +339,9 @@ function nextStep(current) {
         }
         if (!/^0\d{9}$/.test(form.value.phone)) {
             errors.value.step1 = 'เบอร์โทรศัพท์ไม่ถูกต้อง (10 หลัก เริ่มต้นด้วย 0)'; return;
+        }
+        if (!form.value.start_year) {
+            errors.value.step1 = 'กรุณาเลือกปีที่เข้าทำงาน'; return;
         }
     }
     if (current === 2) {
@@ -328,6 +378,7 @@ async function submitRegister() {
             phone:              form.value.phone,
             employee_code:      form.value.employee_code,
             birthday:           form.value.birthday,
+            start_year:         form.value.start_year,
             address_line:       form.value.address_line,
             province_name:      form.value.province_name,
             district_name:      form.value.district_name,

@@ -70,6 +70,15 @@ class User extends Authenticatable implements JWTSubject
         return $this->points()->sum('points');
     }
 
+    // คะแนนทั้งหมด โดยไม่หักรายการแลกรางวัล (source = redemption)
+    public function getReceiptPointsAttribute()
+    {
+        return (int) $this->points()
+            ->where('source', '!=', 'redemption')
+            ->where('points', '>', 0)
+            ->sum('points');
+    }
+
     public function getLevelMultiplierAttribute()
     {
         switch ($this->level) {

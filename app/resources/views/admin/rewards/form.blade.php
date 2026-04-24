@@ -47,12 +47,13 @@
 
             <div class="form-group">
                 <label>รูปภาพ</label>
-                @if($reward->exists && $reward->image)
-                    <div class="mb-2">
-                        <img src="{{ Storage::url($reward->image) }}" style="height:80px;object-fit:cover;" class="img-thumbnail">
-                    </div>
-                @endif
-                <input type="file" name="image" class="form-control-file" accept=".jpg,.jpeg,.png">
+                <div class="mb-2">
+                    @if($reward->exists && $reward->image)
+                        <img id="existing-image" src="{{ Storage::url($reward->image) }}" style="height:100px;object-fit:cover;" class="img-thumbnail">
+                    @endif
+                    <img id="preview-image" src="#" alt="Preview" class="img-thumbnail" style="height:100px;object-fit:cover;display:none;">
+                </div>
+                <input type="file" id="file-image" name="image" class="form-control-file" accept=".jpg,.jpeg,.png">
                 <small class="text-muted">JPG/PNG ขนาดไม่เกิน 2MB</small>
             </div>
 
@@ -70,4 +71,16 @@
         </form>
     </div>
 </div>
+@stop
+@section('js')
+<script>
+document.getElementById('file-image').addEventListener('change', function () {
+    if (!this.files[0]) return;
+    var prev = document.getElementById('preview-image');
+    prev.src = URL.createObjectURL(this.files[0]);
+    prev.style.display = 'inline-block';
+    var existing = document.getElementById('existing-image');
+    if (existing) existing.style.display = 'none';
+});
+</script>
 @stop

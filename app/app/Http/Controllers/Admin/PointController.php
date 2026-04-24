@@ -23,9 +23,12 @@ class PointController extends Controller
 
     public function index(Request $request)
     {
-        $query = User::withSum('points', 'points')
-                     ->with('currentBranch.branch')
-                     ->where('is_active', true);
+        $query = User::withSum(['points as accumulated_points' => function ($q) {
+                        $q->where('source', '!=', 'redemption')
+                          ->where('points', '>', 0);
+                    }], 'points')
+                    ->with('currentBranch.branch')
+                    ->where('is_active', true);
 
         if ($request->filled('search')) {
             $s = $request->search;
@@ -33,7 +36,7 @@ class PointController extends Controller
                                       ->orWhere('employee_code','like',"%$s%"));
         }
 
-        $users = $query->orderByDesc('points_sum_points')->paginate(20)->withQueryString();
+        $users = $query->orderByDesc('accumulated_points')->paginate(20)->withQueryString();
 
         return view('admin.points.index', compact('users'));
     }
@@ -41,9 +44,13 @@ class PointController extends Controller
     public function show(User $user)
     {
         $points      = $user->points()->latest()->paginate(30);
-        $totalPoints = $user->points()->sum('points');
+        $totalPoints = $user->points()
+            ->where('source', '!=', 'redemption')
+            ->where('points', '>', 0)
+            ->sum('points');
+        $remainingPoints = $user->points()->sum('points');
 
-        return view('admin.points.show', compact('user', 'points', 'totalPoints'));
+        return view('admin.points.show', compact('user', 'points', 'totalPoints', 'remainingPoints'));
     }
 
     public function adjust(Request $request, User $user)

@@ -10,7 +10,7 @@ class BannerController extends Controller
 {
     public function show(string $type)
     {
-        $allowed = ['main', 'receipt', 'exam', 'reward'];
+        $allowed = ['main', 'receipt', 'receipt_cta', 'exam', 'exam_cta', 'reward'];
         if (!in_array($type, $allowed)) {
             return response()->json(null);
         }
@@ -38,10 +38,11 @@ class BannerController extends Controller
         }
 
         return response()->json([
-            'id'             => $banner->id,
-            'type'           => $banner->type,
-            'image_url'      => $imageUrl,
-            'condition_text' => $banner->condition_text,
+            'id'          => $banner->id,
+            'type'        => $banner->type,
+            'image_url'   => $imageUrl,
+            'button_text' => $banner->condition_text,
+            'link_url'    => $banner->link_url,
         ]);
     }
 }

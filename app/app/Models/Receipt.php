@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Point;
 
 class Receipt extends Model
 {
@@ -19,4 +20,11 @@ class Receipt extends Model
 
     public function user()     { return $this->belongsTo(User::class); }
     public function approver() { return $this->belongsTo(Admin::class, 'approved_by'); }
+
+    public function pointHistory()
+    {
+        return $this->hasMany(Point::class, 'reference_id')
+                    ->where('reference_type', self::class)
+                    ->orderBy('created_at');
+    }
 }

@@ -33,6 +33,8 @@ Route::prefix('admin')->name('admin.')->middleware('admin.auth')->group(function
     Route::get('receipts/{receipt}',            [Admin\ReceiptController::class, 'show'])->name('receipts.show');
     Route::post('receipts/{receipt}/approve',   [Admin\ReceiptController::class, 'approve'])->name('receipts.approve');
     Route::post('receipts/{receipt}/reject',    [Admin\ReceiptController::class, 'reject'])->name('receipts.reject');
+    Route::post('receipts/{receipt}/cancel',    [Admin\ReceiptController::class, 'cancel'])->name('receipts.cancel');
+    Route::get('receipts/export/products',      [Admin\ReceiptController::class, 'exportProducts'])->name('receipts.export.products');
 
     // Points
     Route::get('points',                        [Admin\PointController::class, 'index'])->name('points.index');
@@ -48,9 +50,11 @@ Route::prefix('admin')->name('admin.')->middleware('admin.auth')->group(function
 
     // Rewards
     Route::resource('rewards', Admin\RewardController::class);
+    Route::resource('products', Admin\ProductController::class)->except(['show']);
     Route::get('redemptions',                   [Admin\RedemptionController::class, 'index'])->name('redemptions.index');
     Route::post('redemptions/{redemption}/approve', [Admin\RedemptionController::class, 'approve'])->name('redemptions.approve');
     Route::post('redemptions/{redemption}/reject',  [Admin\RedemptionController::class, 'reject'])->name('redemptions.reject');
+    Route::put('redemptions/{redemption}/tracking', [Admin\RedemptionController::class, 'updateTracking'])->name('redemptions.tracking.update');
     Route::get('redemptions/export',            [Admin\RedemptionController::class, 'export'])->name('redemptions.export');
 
     // Banners
@@ -63,4 +67,13 @@ Route::prefix('admin')->name('admin.')->middleware('admin.auth')->group(function
     // Reports
     Route::get('reports',                       [Admin\ReportController::class, 'index'])->name('reports.index');
     Route::get('reports/export/{type}',         [Admin\ReportController::class, 'export'])->name('reports.export');
+
+    // Settings
+    Route::get('settings',  [Admin\SettingController::class, 'index'])->name('settings.index');
+    Route::put('settings',  [Admin\SettingController::class, 'update'])->name('settings.update');
+
+    // Private file serve
+    Route::get('file/{path}', [Admin\FileController::class, 'serve'])
+        ->where('path', '.*')
+        ->name('file.serve');
 });

@@ -14,30 +14,64 @@ class ExamController extends Controller
 {
     public function index(Request $request)
     {
-        $user = $request->user();
-        $parts = ExamPart::where('is_active', true)
-            ->orderByDesc('part_number')
-            ->get();
+        $user  = $request->user();
+        $parts = ExamPart::where('is_active', true)->orderBy('part_number')->get();
 
-        $myResults = UserExamResult::where('user_id', $user->id)
-            ->get(['exam_part_id', 'section', 'passed'])
-            ->groupBy('exam_part_id');
+        $results = UserExamResult::where('user_id', $user->id)
+            ->whereIn('exam_part_id', $parts->pluck('id'))
+            ->get()
+            ->groupBy(function ($r) {
+                return $r->exam_part_id . '_' . $r->section;
+            });
 
-        return response()->json($parts->map(function ($p) use ($myResults) {
-            $results = $myResults->get($p->id, collect());
+        return response()->json($parts->map(function ($p) use ($results) {
+            $pre  = $results->get($p->id . '_pre')  ? $results->get($p->id . '_pre')->first()  : null;
+            $vdo  = $results->get($p->id . '_vdo')  ? $results->get($p->id . '_vdo')->first()  : null;
+            $post = $results->get($p->id . '_post') ? $results->get($p->id . '_post')->first() : null;
+
+            $vdoUrl = $p->vdo_path ? Storage::url($p->vdo_path) : $p->vdo_url;
+
             return [
-                'id'          => $p->id,
-                'name'        => $p->title,
-                'part_number' => $p->part_number,
-                'banner_image'=> $p->banner_image ? Storage::url($p->banner_image) : null,
-                'vdo_url'     => $p->vdo_path ? Storage::url($p->vdo_path) : $p->vdo_url,
-                'sections'    => ['pre', 'post'],
-                'sections_count' => 2,
-                'my_results'  => $results->map(function ($r) {
-                    return ['section' => $r->section, 'passed' => (bool) $r->passed];
-                })->values(),
+                'id'           => $p->id,
+                'name'         => $p->title,
+                'part_number'  => $p->part_number,
+                'banner_image' => $p->banner_image ? Storage::url($p->banner_image) : null,
+                'pre'  => [
+                    'points'     => $p->pre_test_points,
+                    'passed'     => $pre  ? (bool)  $pre->passed     : false,
+                    'percentage' => $pre  ? (float) $pre->percentage : 0,
+                ],
+                'vdo'  => [
+                    'url'        => $vdoUrl,
+                    'percentage' => $vdo  ? (float) $vdo->percentage : 0,
+                    'passed'     => $vdo  ? (bool)  $vdo->passed     : false,
+                ],
+                'post' => [
+                    'points'     => $p->post_test_points,
+                    'passed'     => $post ? (bool)  $post->passed     : false,
+                    'percentage' => $post ? (float) $post->percentage : 0,
+                ],
             ];
         }));
+    }
+
+    public function videoProgress(Request $request, ExamPart $exam)
+    {
+        $request->validate(['percentage' => 'required|numeric|min:0|max:100']);
+        $user       = $request->user();
+        $percentage = (float) $request->percentage;
+        $passed     = $percentage >= 100;
+
+        UserExamResult::updateOrCreate(
+            ['user_id' => $user->id, 'exam_part_id' => $exam->id, 'section' => 'vdo'],
+            [
+                'percentage'   => $percentage,
+                'passed'       => $passed,
+                'completed_at' => $passed ? now() : null,
+            ]
+        );
+
+        return response()->json(['percentage' => $percentage, 'passed' => $passed]);
     }
 
     public function questions(Request $request, ExamPart $exam)
@@ -45,7 +79,6 @@ class ExamController extends Controller
         $request->validate(['section' => 'required|in:pre,post']);
         $user = $request->user();
 
-        // ตรวจว่าทำไปแล้วหรือยัง
         $done = UserExamResult::where('user_id', $user->id)
             ->where('exam_part_id', $exam->id)
             ->where('section', $request->section)
@@ -56,15 +89,18 @@ class ExamController extends Controller
             return response()->json(['message' => 'ทำแบบทดสอบนี้ผ่านแล้ว'], 403);
         }
 
+        $limit = $exam->questions_per_session ?? 10;
+
         $questions = ExamQuestion::where('exam_part_id', $exam->id)
             ->where('section', $request->section)
-            ->orderBy('order')
+            ->inRandomOrder()
+            ->take($limit)
             ->get(['id', 'question_text', 'choice_1', 'choice_2', 'choice_3', 'choice_4'])
             ->map(function ($q) {
                 return [
-                    'id'       => $q->id,
+                    'id'            => $q->id,
                     'question_text' => $q->question_text,
-                    'choices'  => [$q->choice_1, $q->choice_2, $q->choice_3, $q->choice_4],
+                    'choices'       => [$q->choice_1, $q->choice_2, $q->choice_3, $q->choice_4],
                 ];
             });
 
@@ -79,10 +115,9 @@ class ExamController extends Controller
             'answers.*'=> 'integer|min:0|max:3',
         ]);
 
-        $user = $request->user();
+        $user    = $request->user();
         $section = $request->section;
 
-        // ป้องกัน submit ซ้ำ
         $existing = UserExamResult::where('user_id', $user->id)
             ->where('exam_part_id', $exam->id)
             ->where('section', $section)
@@ -92,9 +127,11 @@ class ExamController extends Controller
             return response()->json(['message' => 'ทำแบบทดสอบนี้ผ่านแล้ว'], 403);
         }
 
-        $questions = ExamQuestion::where('exam_part_id', $exam->id)
+        // answers เป็น {question_id: choice_index(0-3)}
+        $questionIds = array_keys($request->answers);
+        $questions   = ExamQuestion::where('exam_part_id', $exam->id)
             ->where('section', $section)
-            ->orderBy('order')
+            ->whereIn('id', $questionIds)
             ->get();
 
         if ($questions->isEmpty()) {
@@ -102,21 +139,21 @@ class ExamController extends Controller
         }
 
         $score = 0;
-        foreach ($questions as $i => $q) {
-            $answer = isset($request->answers[$i]) ? (int) $request->answers[$i] : -1;
-            // correct_choice เป็น 1-4, answers เป็น 0-3
+        foreach ($questions as $q) {
+            $answer = isset($request->answers[$q->id]) ? (int) $request->answers[$q->id] : -1;
             if ($answer + 1 === $q->correct_choice) {
                 $score++;
             }
         }
 
-        $maxScore = $questions->count();
-        $percentage = ($maxScore > 0) ? round($score / $maxScore * 100, 2) : 0;
-        $passingScore = 70; // ต้องผ่าน 70%
-        $passed = $percentage >= $passingScore;
+        $maxScore     = $questions->count();
+        $percentage   = ($maxScore > 0) ? round($score / $maxScore * 100, 2) : 0;
+        $passingScore = $section === 'pre' ? 10 : 70;
+        $passed       = $percentage >= $passingScore;
 
         $pointsColumn = $section === 'pre' ? 'pre_test_points' : 'post_test_points';
-        $earnedPoints = $passed ? (int) ($exam->{$pointsColumn} * ($percentage / 100)) : 0;
+        // คะแนน = สัดส่วนตามเปอร์เซ็นที่ทำได้จริง (ผ่านเกณฑ์เท่านั้นที่ได้คะแนน)
+        $earnedPoints = $passed ? (int) round($exam->{$pointsColumn} * $percentage / 100) : 0;
 
         // บันทึกผล (upsert ถ้าเคยสอบไม่ผ่าน)
         $result = UserExamResult::updateOrCreate(

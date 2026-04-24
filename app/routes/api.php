@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\ExamController;
 use App\Http\Controllers\Api\RewardController;
 use App\Http\Controllers\Api\BannerController;
 use App\Http\Controllers\Api\QAController;
+use App\Http\Controllers\Api\ProductController;
 
 // Public — ไม่ต้อง auth
 Route::prefix('liff')->name('liff.')->group(function () {
@@ -20,9 +21,20 @@ Route::prefix('liff')->name('liff.')->group(function () {
     Route::get('districts/{provinceId}', [LocationController::class, 'districts']);
     Route::get('subdistricts/{districtId}', [LocationController::class, 'subdistricts']);
     Route::get('branches',               [LocationController::class, 'branches']);
+    Route::get('zones',                  [LocationController::class, 'zones']);
+    Route::get('shop-types',             [LocationController::class, 'shopTypes']);
 
     // Banner (public — ไม่ต้อง login ก็ดูได้)
     Route::get('banner/{type}', [BannerController::class, 'show']);
+
+    // Stamp config (public)
+    Route::get('stamp-config', [LocationController::class, 'stampConfig']);
+
+    // Q&A (public)
+    Route::get('qa', [QAController::class, 'index']);
+
+    // Products (public)
+    Route::get('products', [ProductController::class, 'index']);
 });
 
 // Protected — ต้อง JWT
@@ -37,16 +49,15 @@ Route::prefix('liff')->name('liff.')->middleware('auth:api')->group(function () 
     Route::post('receipts', [ReceiptController::class, 'store']);
 
     // Exam
-    Route::get('exams',                           [ExamController::class, 'index']);
-    Route::get('exams/{exam}/questions',          [ExamController::class, 'questions']);
-    Route::post('exams/{exam}/submit',            [ExamController::class, 'submit']);
-    Route::get('exam-results',                    [ExamController::class, 'myResults']);
+    Route::get('exams',                              [ExamController::class, 'index']);
+    Route::get('exams/{exam}/questions',             [ExamController::class, 'questions']);
+    Route::post('exams/{exam}/submit',               [ExamController::class, 'submit']);
+    Route::post('exams/{exam}/video-progress',       [ExamController::class, 'videoProgress']);
+    Route::get('exam-results',                       [ExamController::class, 'myResults']);
 
     // Rewards
     Route::get('rewards',     [RewardController::class, 'index']);
     Route::post('redeem',     [RewardController::class, 'redeem']);
     Route::get('redemptions', [RewardController::class, 'myRedemptions']);
 
-    // Q&A
-    Route::get('qa', [QAController::class, 'index']);
 });
