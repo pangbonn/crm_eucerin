@@ -12,4 +12,7 @@ const app   = createApp(App);
 
 app.use(pinia);
 app.use(router);
-app.mount('#app');
+
+// รอ initial navigation เสร็จก่อน mount
+// ป้องกัน race condition ระหว่าง route redirect (/ → /receipt) กับ onMounted
+router.isReady().then(() => app.mount('#app'));

@@ -4,11 +4,12 @@ import { getLiff, isMock } from '@/plugins/liff';
 import api from '@/composables/useApi';
 
 export const useAuthStore = defineStore('auth', () => {
-    const token     = ref(localStorage.getItem('liff_token') || null);
-    const user      = ref(null);
-    const lineProfile = ref(null);
-    const ready     = ref(false);
-    const loading   = ref(true);
+    const token          = ref(localStorage.getItem('liff_token') || null);
+    const user           = ref(null);
+    const lineProfile    = ref(null);
+    const ready          = ref(false);
+    const loading        = ref(true);
+    const liffInitFailed = ref(false);
 
     const isLoggedIn = computed(() => !!token.value && !!user.value);
 
@@ -20,12 +21,13 @@ export const useAuthStore = defineStore('auth', () => {
 
             if (!liff.isLoggedIn()) {
                 if (isMock) {
-                    // Mock: set logged in ทันที ไม่ต้อง redirect
                     liff._loggedIn = true;
                 } else if (!forceLogin) {
                     return;
                 } else {
-                    liff.login({ redirectUri: window.location.href });
+                    // ส่งแค่ origin ไม่เอา pathname หรือ query string
+                    // pathname='/' จะทำให้ได้ trailing slash → redirect_uri mismatch
+                    liff.login({ redirectUri: window.location.origin });
                     return;
                 }
             }
@@ -36,10 +38,19 @@ export const useAuthStore = defineStore('auth', () => {
             if (token.value) {
                 await fetchUser();
             } else {
-                await loginWithLine(profile, liff.getAccessToken());
+                const accessToken = liff.getAccessToken();
+                if (!accessToken) {
+                    // token null = LINE session ยังไม่ได้ process — ไม่ทำอะไรต่อ
+                    console.warn('[Auth] liff.getAccessToken() returned null');
+                    return;
+                }
+                await loginWithLine(profile, accessToken);
             }
         } catch (e) {
             console.error('[Auth] initLiff error:', e);
+            // ไม่ call liff.login() ที่นี่เพราะจะ infinite loop
+            // ถ้า init ล้มเหลวให้แสดงปุ่ม fallback ใน App.vue แทน
+            liffInitFailed.value = true;
         } finally {
             ready.value = true;
             loading.value = false;
@@ -61,12 +72,9 @@ export const useAuthStore = defineStore('auth', () => {
             }
             // needs_register: true → user.value ยังเป็น null → App.vue ดีดไป /register
         } catch (e) {
-            // LINE access token หมดอายุ (401) → re-auth ผ่าน LINE ใหม่
-            if (e.response && e.response.status === 401 && !isMock) {
-                getLiff().login({ redirectUri: window.location.href });
-            } else {
-                console.error('[Auth] loginWithLine error:', e);
-            }
+            // 401 จาก /login หมายถึง backend verify token กับ LINE ไม่ผ่าน
+            // ไม่ call liff.login() ซ้ำเพราะจะ infinite loop
+            console.error('[Auth] loginWithLine error:', e.response?.status, e.response?.data || e.message);
         }
     }
 
@@ -114,5 +122,14 @@ export const useAuthStore = defineStore('auth', () => {
         }
     }
 
-    return { token, user, lineProfile, ready, loading, isLoggedIn, initLiff, loginWithLine, fetchUser, setToken, logout, logoutAndLoginWithLine };
+    function retryLiffLogin() {
+        liffInitFailed.value = false;
+        try {
+            getLiff().login({ redirectUri: window.location.origin });
+        } catch (_) {
+            window.location.reload();
+        }
+    }
+
+    return { token, user, lineProfile, ready, loading, liffInitFailed, isLoggedIn, initLiff, loginWithLine, fetchUser, setToken, logout, logoutAndLoginWithLine, retryLiffLogin };
 });

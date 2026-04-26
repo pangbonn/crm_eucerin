@@ -15,7 +15,32 @@ class BannerController extends Controller
             return response()->json(null);
         }
 
-        $banner = Banner::where('type', $type)
+        $banner = $this->getActiveBanner($type);
+
+        if (!$banner) {
+            return response()->json(null);
+        }
+
+        $data = [
+            'id'          => $banner->id,
+            'type'        => $banner->type,
+            'image_url'   => $this->toFullUrl($banner->image_url),
+            'button_text' => $banner->condition_text,
+            'link_url'    => $banner->link_url,
+        ];
+
+        // เมื่อดึง receipt banner ให้รวม button background จาก receipt_cta มาด้วย
+        if ($type === 'receipt') {
+            $cta = $this->getActiveBanner('receipt_cta');
+            $data['button_bg_url'] = $cta ? $this->toFullUrl($cta->image_url) : null;
+        }
+
+        return response()->json($data);
+    }
+
+    private function getActiveBanner(string $type): ?Banner
+    {
+        return Banner::where('type', $type)
             ->where('is_active', true)
             ->where(function ($q) {
                 $q->whereNull('display_month')
@@ -27,22 +52,16 @@ class BannerController extends Controller
             })
             ->latest()
             ->first();
+    }
 
-        if (!$banner) {
-            return response()->json(null);
+    private function toFullUrl(?string $path): ?string
+    {
+        if (!$path) {
+            return null;
         }
-
-        $imageUrl = $banner->image_url;
-        if ($imageUrl && !filter_var($imageUrl, FILTER_VALIDATE_URL)) {
-            $imageUrl = Storage::url($imageUrl);
+        if (filter_var($path, FILTER_VALIDATE_URL)) {
+            return $path;
         }
-
-        return response()->json([
-            'id'          => $banner->id,
-            'type'        => $banner->type,
-            'image_url'   => $imageUrl,
-            'button_text' => $banner->condition_text,
-            'link_url'    => $banner->link_url,
-        ]);
+        return url(Storage::url($path));
     }
 }

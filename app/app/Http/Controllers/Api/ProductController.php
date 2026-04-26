@@ -18,7 +18,7 @@ class ProductController extends Controller
                 if ($product->image) {
                     $imageUrl = filter_var($product->image, FILTER_VALIDATE_URL)
                         ? $product->image
-                        : Storage::url($product->image);
+                        : url(Storage::url($product->image));
                 }
 
                 return [

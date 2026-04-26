@@ -17,9 +17,7 @@
            alt=""
            class="w-full rounded-xl cursor-pointer shadow"
            @click="goToList">
-      <button class="btn btn-primary w-full" @click="goToList">
-        กดเพื่อทำแบบทดสอบ
-      </button>
+     
     </div>
 
     <!-- EC Passport Stamp Card -->
@@ -47,13 +45,15 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import { useBannerStore } from '@/stores/banner';
 import BottomNav from '@/components/BottomNav.vue';
 import api from '@/composables/useApi';
 
 const router        = useRouter();
+const bannerStore   = useBannerStore();
 const loading       = ref(true);
-const examBanner    = ref(null);
-const examCtaBanner = ref(null);
+const examBanner    = computed(() => bannerStore.get('exam'));
+const examCtaBanner = computed(() => bannerStore.get('exam_cta'));
 const exams         = ref([]);
 const stampConfig   = ref({ stamp_max: 8, stamp_points: 10 });
 
@@ -63,16 +63,14 @@ const stampCount = computed(() => {
 
 onMounted(async () => {
     try {
-        const [examRes, bannerRes, ctaRes, configRes] = await Promise.all([
+        const [examRes, , , configRes] = await Promise.all([
             api.get('/api/liff/exams'),
-            api.get('/api/liff/banner/exam'),
-            api.get('/api/liff/banner/exam_cta'),
+            bannerStore.fetch('exam'),
+            bannerStore.fetch('exam_cta'),
             api.get('/api/liff/stamp-config'),
         ]);
-        exams.value         = examRes.data;
-        examBanner.value    = bannerRes.data;
-        examCtaBanner.value = ctaRes.data;
-        stampConfig.value   = configRes.data;
+        exams.value       = examRes.data;
+        stampConfig.value = configRes.data;
     } catch (e) {
         // ignore
     } finally {

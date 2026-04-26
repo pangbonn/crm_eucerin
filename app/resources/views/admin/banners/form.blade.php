@@ -12,14 +12,14 @@
             <div class="form-group">
                 <label>ประเภท <span class="text-danger">*</span></label>
                 <select name="type" class="form-control" required>
-                    @foreach(['main'=>'หน้าหลัก','receipt'=>'ส่งใบเสร็จ','receipt_cta'=>'ส่งใบเสร็จ (ปุ่ม CTA)','exam'=>'แบบทดสอบ (Header)','exam_cta'=>'แบบทดสอบ (ปุ่ม CTA)','reward'=>'แลกรางวัล'] as $v=>$l)
+                    @foreach(['main'=>'หน้าหลัก','receipt'=>'ส่งใบเสร็จ (Banner หัว)','receipt_cta'=>'ส่งใบเสร็จ (ปุ่มอัปโหลดสลิป)','exam'=>'แบบทดสอบ (Header)','exam_cta'=>'แบบทดสอบ (ปุ่ม CTA)','reward'=>'แลกรางวัล'] as $v=>$l)
                         <option value="{{ $v }}" {{ old('type', $banner->type)===$v?'selected':'' }}>{{ $l }}</option>
                     @endforeach
                 </select>
             </div>
 
             <div class="form-group">
-                <label>รูปภาพ Banner</label>
+                <label>รูปภาพ</label>
                 <div class="mb-2">
                     @if($banner->exists && $banner->image_url)
                         <img id="existing-image" src="{{ filter_var($banner->image_url, FILTER_VALIDATE_URL) ? $banner->image_url : Storage::url($banner->image_url) }}"
@@ -31,20 +31,14 @@
             </div>
 
             <div class="form-group">
-                <label>ข้อความปุ่ม (Button Text)</label>
-                <input type="text" name="condition_text" class="form-control" placeholder="เช่น เริ่มทำแบบทดสอบ"
-                       value="{{ old('condition_text', $banner->condition_text) }}">
-                <small class="form-text text-muted">ข้อความที่แสดงบนปุ่ม CTA ของ Banner</small>
+                <label>ข้อความ / เงื่อนไขกิจกรรม</label>
+                <textarea name="condition_text" class="form-control" rows="3"
+                          placeholder="เช่น เงื่อนไขการร่วมกิจกรรม...">{{ old('condition_text', $banner->condition_text) }}</textarea>
+                <small class="form-text text-muted">แสดงใน Bottom Sheet เงื่อนไขการเข้าร่วมกิจกรรม (เฉพาะประเภท "ส่งใบเสร็จ")</small>
             </div>
 
-            <div class="form-group">
-                <label>Link URL (ปุ่ม CTA)</label>
-                <input type="url" name="link_url" class="form-control" placeholder="https://..."
-                       value="{{ old('link_url', $banner->link_url) }}">
-                <small class="form-text text-muted">URL ที่ปุ่มจะพาไป (ถ้าไม่กำหนด ปุ่มจะไม่แสดง)</small>
-            </div>
 
-            <div class="row">
+<div class="row">
                 <div class="col-md-4">
                     <div class="form-group">
                         <label>เดือนที่แสดง</label>

@@ -34,9 +34,10 @@ router.beforeEach(async (to) => {
         return { path: '/register', query: { redirect: to.fullPath } };
     }
     if (!to.meta.requiresAuth && auth.isLoggedIn && to.path === '/register') {
-        const redirectTo = typeof to.query.redirect === 'string' ? to.query.redirect : '';
-        if (redirectTo && redirectTo !== '/register') {
-            return { path: redirectTo };
+        const savedRedirect = sessionStorage.getItem('liff_redirect');
+        if (savedRedirect && savedRedirect !== '/register') {
+            sessionStorage.removeItem('liff_redirect');
+            return { path: savedRedirect };
         }
         return { path: '/receipt' };
     }

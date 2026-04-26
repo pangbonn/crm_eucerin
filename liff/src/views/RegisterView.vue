@@ -32,7 +32,7 @@
           </div>
           <div class="form-control mb-3">
             <label class="label"><span class="label-text">เบอร์โทรศัพท์ <span class="text-error">*</span></span></label>
-            <input v-model="form.phone" type="tel" class="input input-bordered" placeholder="0812345678" maxlength="10">
+            <input v-model="form.phone" type="tel" class="input input-bordered" placeholder="08xxxxxxxx" maxlength="10">
           </div>
           <div class="form-control mb-3">
             <label class="label"><span class="label-text">รหัสพนักงาน</span></label>

@@ -23,7 +23,7 @@ class BannerController extends Controller
     public function store(Request $request)
     {
         $data = $this->validateBanner($request);
-        $data['image_url'] = $this->uploadImage($request);
+        $data['image_url'] = $this->uploadFile($request);
         Banner::create($data);
         return redirect()->route('admin.banners.index')->with('success', 'เพิ่ม Banner เรียบร้อย');
     }
@@ -37,10 +37,8 @@ class BannerController extends Controller
     {
         $data = $this->validateBanner($request);
         if ($request->hasFile('image_url')) {
-            if ($banner->image_url && !filter_var($banner->image_url, FILTER_VALIDATE_URL)) {
-                Storage::disk('public')->delete($banner->image_url);
-            }
-            $data['image_url'] = $this->uploadImage($request);
+            $this->deleteFile($banner->image_url);
+            $data['image_url'] = $this->uploadFile($request);
         } else {
             unset($data['image_url']);
         }
@@ -50,9 +48,7 @@ class BannerController extends Controller
 
     public function destroy(Banner $banner)
     {
-        if ($banner->image_url && !filter_var($banner->image_url, FILTER_VALIDATE_URL)) {
-            Storage::disk('public')->delete($banner->image_url);
-        }
+        $this->deleteFile($banner->image_url);
         $banner->delete();
         return back()->with('success', 'ลบ Banner เรียบร้อย');
     }
@@ -60,21 +56,28 @@ class BannerController extends Controller
     private function validateBanner(Request $request): array
     {
         return $request->validate([
-            'type'            => 'required|in:main,receipt,receipt_cta,exam,exam_cta,reward',
-            'condition_text'  => 'nullable|string|max:500',
-            'link_url'        => 'nullable|url|max:500',
-            'is_active'       => 'boolean',
-            'display_month'   => 'nullable|integer|between:1,12',
-            'display_year'    => 'nullable|integer|min:2020',
-            'image_url'       => 'nullable|file|mimes:jpg,jpeg,png|max:2048',
+            'type'           => 'required|in:main,receipt,receipt_cta,exam,exam_cta,reward',
+            'condition_text' => 'nullable|string|max:500',
+            'link_url'       => 'nullable|url|max:500',
+            'is_active'      => 'boolean',
+            'display_month'  => 'nullable|integer|between:1,12',
+            'display_year'   => 'nullable|integer|min:2020',
+            'image_url'      => 'nullable|file|mimes:jpg,jpeg,png|max:2048',
         ]);
     }
 
-    private function uploadImage(Request $request): ?string
+    private function uploadFile(Request $request): ?string
     {
         if ($request->hasFile('image_url')) {
             return $request->file('image_url')->store('banners', 'public');
         }
         return null;
+    }
+
+    private function deleteFile(?string $path): void
+    {
+        if ($path && !filter_var($path, FILTER_VALIDATE_URL)) {
+            Storage::disk('public')->delete($path);
+        }
     }
 }

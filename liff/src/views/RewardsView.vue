@@ -262,14 +262,16 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '@/stores/auth';
+import { useBannerStore } from '@/stores/banner';
 import BottomNav from '@/components/BottomNav.vue';
 import AddressTypeahead from '@/components/AddressTypeahead.vue';
 import api from '@/composables/useApi';
 
-const authStore = useAuthStore();
+const authStore   = useAuthStore();
+const bannerStore = useBannerStore();
 const loading = ref(true);
 const rewards = ref([]);
-const banner = ref(null);
+const banner  = computed(() => bannerStore.get('reward'));
 const selectedReward = ref(null);
 const redeemError = ref('');
 const redeeming = ref(false);
@@ -308,13 +310,12 @@ const fullAddressText = computed(() => {
 
 onMounted(async () => {
     try {
-        const [rRes, bRes, provinceRes] = await Promise.all([
+        const [rRes, , provinceRes] = await Promise.all([
             api.get('/api/liff/rewards'),
-            api.get('/api/liff/banner/reward'),
+            bannerStore.fetch('reward'),
             api.get('/api/liff/provinces'),
         ]);
         rewards.value = rRes.data;
-        banner.value = bRes.data;
         shippingProvinceOptions.value = provinceRes.data.map(p => ({ id: p.id, name: p.name_th }));
     } catch (e) {
         // ignore

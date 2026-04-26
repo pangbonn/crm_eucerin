@@ -31,6 +31,7 @@
   - Post-test: ปุ่ม "เสร็จสิ้น"
 - [x] A9: Rewards & Redemptions — RewardController, RedemptionController, views
 - [x] A10: Banner Management — exam_cta / receipt_cta type, link_url, button_text
+- [x] A10b: Banner — full URL response, button_bg_url field (receipt type), CMS อัปโหลดรูปปุ่ม
 - [x] A11: Q&A Management — QACategoryController, QAItemController, views
 - [x] A12: Reports/Export — ReportController + 4 Export classes + reports/index view
 - [x] A13: Product Information (Backoffice + LIFF) — products CRUD, seeder, API, `/products` page + popup detail

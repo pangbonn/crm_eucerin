@@ -10,7 +10,7 @@
     </a>
 </div>
 
-@foreach(['main'=>'หน้าหลัก','receipt'=>'ส่งใบเสร็จ','exam'=>'แบบทดสอบ','reward'=>'แลกรางวัล'] as $type=>$label)
+@foreach(['main'=>'หน้าหลัก','receipt'=>'ส่งใบเสร็จ (Banner หัว)','receipt_cta'=>'ส่งใบเสร็จ (ปุ่มอัปโหลดสลิป)','exam'=>'แบบทดสอบ (Header)','exam_cta'=>'แบบทดสอบ (ปุ่ม CTA)','reward'=>'แลกรางวัล'] as $type=>$label)
 <div class="card">
     <div class="card-header bg-light">
         <h3 class="card-title"><b>{{ $label }}</b> <small class="text-muted">({{ $type }})</small></h3>
@@ -27,6 +27,8 @@
                         @if($banner->image_url)
                             <img src="{{ filter_var($banner->image_url, FILTER_VALIDATE_URL) ? $banner->image_url : Storage::url($banner->image_url) }}"
                                  style="height:50px;object-fit:cover;" class="img-thumbnail">
+                        @else
+                            <span class="text-muted small">ไม่มี</span>
                         @endif
                     </td>
                     <td><small>{{ $banner->display_month ? $banner->display_month.'/'.$banner->display_year : 'ไม่กำหนด' }}</small></td>

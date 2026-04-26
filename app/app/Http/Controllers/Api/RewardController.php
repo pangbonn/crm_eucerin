@@ -22,7 +22,7 @@ class RewardController extends Controller
                     'id'              => $r->id,
                     'name'            => $r->name,
                     'description'     => $r->description,
-                    'image_url'       => $r->image ? Storage::url($r->image) : null,
+                    'image_url'       => $r->image ? url(Storage::url($r->image)) : null,
                     'points_required' => $r->points_required,
                     'stock'           => $r->stock,
                 ];

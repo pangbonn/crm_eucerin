@@ -91,11 +91,13 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '@/stores/auth';
+import { useBannerStore } from '@/stores/banner';
 import BottomNav from '@/components/BottomNav.vue';
 import api from '@/composables/useApi';
 
-const authStore  = useAuthStore();
-const banner     = ref(null);
+const authStore   = useAuthStore();
+const bannerStore = useBannerStore();
+const banner      = computed(() => bannerStore.get('main'));
 const stampConfig = ref({ stamp_max: 8, stamp_points: 10 });
 
 const totalPoints = computed(() => {
@@ -110,11 +112,10 @@ const stampCount = computed(() => {
 
 onMounted(async () => {
     try {
-        const [bannerRes, configRes] = await Promise.all([
-            api.get('/api/liff/banner/main'),
+        const [, configRes] = await Promise.all([
+            bannerStore.fetch('main'),
             api.get('/api/liff/stamp-config'),
         ]);
-        banner.value      = bannerRes.data;
         stampConfig.value = configRes.data;
     } catch (e) {
         // ignore

@@ -13,7 +13,7 @@
     <!-- 2. CTA Banner (กดไปหน้าอัพโหลดสลิป) -->
     <div class="mx-4 mt-3">
       <button class="w-full" @click="$router.push('/upload')">
-        <img v-if="bannerCta" :src="bannerCta.image_url" alt="อัพโหลดสลิป"
+        <img v-if="bannerMain && bannerMain.button_bg_url" :src="bannerMain.button_bg_url" alt="อัพโหลดสลิป"
              class="w-full rounded-2xl object-cover shadow active:opacity-80 transition-opacity">
         <div v-else
              class="w-full rounded-2xl bg-primary text-primary-content py-4 flex items-center justify-center gap-2 shadow active:opacity-80 transition-opacity">
@@ -122,28 +122,26 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '@/stores/auth';
+import { useBannerStore } from '@/stores/banner';
 import BottomNav from '@/components/BottomNav.vue';
 import api from '@/composables/useApi';
 
-const authStore = useAuthStore();
-const bannerMain = ref(null);
-const bannerCta  = ref(null);
-const ranking    = ref([]);
-const showTerms  = ref(false);
+const authStore   = useAuthStore();
+const bannerStore = useBannerStore();
+const bannerMain  = computed(() => bannerStore.get('receipt'));
+const ranking     = ref([]);
+const showTerms   = ref(false);
 
 const totalPoints = computed(() => authStore.user?.receipt_points || 0);
 const termsText   = computed(() => bannerMain.value?.condition_text || '');
 
 onMounted(async () => {
     const results = await Promise.allSettled([
-        api.get('/api/liff/banner/receipt'),
-        api.get('/api/liff/banner/receipt_cta'),
+        bannerStore.fetch('receipt'),
         api.get('/api/liff/ranking'),
     ]);
 
-    if (results[0].status === 'fulfilled') bannerMain.value = results[0].value.data;
-    if (results[1].status === 'fulfilled') bannerCta.value  = results[1].value.data;
-    if (results[2].status === 'fulfilled') ranking.value    = results[2].value.data?.slice(0, 5) || [];
+    if (results[1].status === 'fulfilled') ranking.value = results[1].value.data?.slice(0, 5) || [];
 });
 </script>
 

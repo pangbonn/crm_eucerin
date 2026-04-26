@@ -29,13 +29,13 @@ class ExamController extends Controller
             $vdo  = $results->get($p->id . '_vdo')  ? $results->get($p->id . '_vdo')->first()  : null;
             $post = $results->get($p->id . '_post') ? $results->get($p->id . '_post')->first() : null;
 
-            $vdoUrl = $p->vdo_path ? Storage::url($p->vdo_path) : $p->vdo_url;
+            $vdoUrl = $p->vdo_path ? url(Storage::url($p->vdo_path)) : $p->vdo_url;
 
             return [
                 'id'           => $p->id,
                 'name'         => $p->title,
                 'part_number'  => $p->part_number,
-                'banner_image' => $p->banner_image ? Storage::url($p->banner_image) : null,
+                'banner_image' => $p->banner_image ? url(Storage::url($p->banner_image)) : null,
                 'pre'  => [
                     'points'     => $p->pre_test_points,
                     'passed'     => $pre  ? (bool)  $pre->passed     : false,
