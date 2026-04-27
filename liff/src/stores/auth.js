@@ -115,9 +115,9 @@ export const useAuthStore = defineStore('auth', () => {
         logout();
         if (!isMock) {
             try {
-                getLiff().login({ redirectUri: window.location.href });
+                getLiff().login({ redirectUri: window.location.origin });
             } catch (e) {
-                // fallback ไป register ถ้า login() เรียกไม่ได้
+                window.location.href = window.location.origin;
             }
         }
     }
